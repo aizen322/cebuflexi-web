@@ -1,18 +1,14 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import {
-  User,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
-import { auth } from "@/lib/firebase";
+
+// Mock user type
+interface MockUser {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+}
 
 interface AuthContextType {
-  user: User | null;
+  user: MockUser | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
@@ -32,35 +28,64 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<MockUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    // Simulate loading
+    const timer = setTimeout(() => {
       setLoading(false);
-    });
+    }, 1000);
 
-    return unsubscribe;
+    return () => clearTimeout(timer);
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Mock successful sign in
+    const mockUser: MockUser = {
+      uid: "mock-uid-123",
+      email: email,
+      displayName: email.split("@")[0],
+    };
+    
+    setUser(mockUser);
   };
 
   const signUp = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Mock successful sign up
+    const mockUser: MockUser = {
+      uid: "mock-uid-456",
+      email: email,
+      displayName: email.split("@")[0],
+    };
+    
+    setUser(mockUser);
   };
 
   const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Mock successful Google sign in
+    const mockUser: MockUser = {
+      uid: "mock-google-uid-789",
+      email: "user@gmail.com",
+      displayName: "Google User",
+    };
+    
+    setUser(mockUser);
   };
 
   const logout = async () => {
-    await signOut(auth);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setUser(null);
   };
 
   const value = {
