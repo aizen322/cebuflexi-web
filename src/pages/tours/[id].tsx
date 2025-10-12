@@ -1,7 +1,7 @@
 
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -15,11 +15,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Clock, Users, MapPin, Check, Calendar as CalendarIcon, Mail, Phone, User } from "lucide-react";
 import { allTours } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
+import { createBooking, Booking } from "@/services/bookingService";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TourDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const tour = allTours.find(t => t.id === id);
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -31,6 +36,7 @@ export default function TourDetailPage() {
     specialRequests: "",
     addOns: [] as string[]
   });
+  const [isBooking, setIsBooking] = useState(false);
 
   if (!tour) {
     return (
@@ -47,10 +53,94 @@ export default function TourDetailPage() {
     );
   }
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  // Update form data when user is authenticated
+  useEffect(() => {
+    if (user) {
+      setBookingData(prev => ({
+        ...prev,
+        name: user.displayName || "",
+        email: user.email || "",
+      }));
+    }
+  }, [user]);
+
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Booking request submitted! In production, this would process payment and send confirmation email.");
-    console.log("Booking data:", { ...bookingData, tourId: tour.id, date: selectedDate });
+    
+    // Check if user is authenticated
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to book a tour.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!selectedDate) {
+      toast({
+        title: "Date Required",
+        description: "Please select a date for your tour.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!bookingData.phone) {
+      toast({
+        title: "Phone Required",
+        description: "Please provide a contact phone number.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsBooking(true);
+
+    try {
+      const booking: Omit<Booking, "id" | "createdAt"> = {
+        userId: user.uid,
+        userEmail: user.email || "",
+        userName: user.displayName || "",
+        tourId: tour.id,
+        bookingType: "tour",
+        startDate: selectedDate,
+        endDate: selectedDate, // For tours, start and end are the same day
+        groupSize: bookingData.groupSize,
+        totalPrice: tour.price * bookingData.groupSize,
+        status: "pending",
+        specialRequests: bookingData.specialRequests,
+        contactPhone: bookingData.phone,
+      };
+
+      const bookingId = await createBooking(booking);
+      
+      toast({
+        title: "Booking Confirmed!",
+        description: `Your tour booking has been submitted. Booking ID: ${bookingId}`,
+      });
+
+      // Reset form
+      setBookingData({
+        name: user.displayName || "",
+        email: user.email || "",
+        phone: "",
+        groupSize: 2,
+        specialRequests: "",
+        addOns: []
+      });
+      setSelectedDate(undefined);
+
+    } catch (error) {
+      console.error("Booking error:", error);
+      toast({
+        title: "Booking Failed",
+        description: "There was an error processing your booking. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   return (
@@ -174,6 +264,13 @@ export default function TourDetailPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
+                    {!user && (
+                      <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Sign in required:</strong> Please sign in to book this tour.
+                        </p>
+                      </div>
+                    )}
                     <form onSubmit={handleBookingSubmit} className="space-y-4">
                       <div>
                         <Label htmlFor="name">Full Name *</Label>
@@ -186,8 +283,12 @@ export default function TourDetailPage() {
                             onChange={(e) => setBookingData({...bookingData, name: e.target.value})}
                             className="pl-10"
                             placeholder="John Doe"
+                            disabled={!!user}
                           />
                         </div>
+                        {user && (
+                          <p className="text-xs text-gray-500 mt-1">Pre-filled from your account</p>
+                        )}
                       </div>
 
                       <div>
@@ -202,8 +303,12 @@ export default function TourDetailPage() {
                             onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
                             className="pl-10"
                             placeholder="john@example.com"
+                            disabled={!!user}
                           />
                         </div>
+                        {user && (
+                          <p className="text-xs text-gray-500 mt-1">Pre-filled from your account</p>
+                        )}
                       </div>
 
                       <div>
@@ -275,8 +380,13 @@ export default function TourDetailPage() {
                         </div>
                       </div>
 
-                      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
-                        Book Now
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-blue-600 hover:bg-blue-700" 
+                        size="lg"
+                        disabled={isBooking || authLoading}
+                      >
+                        {isBooking ? "Processing..." : "Book Now"}
                       </Button>
                       <p className="text-xs text-center text-gray-500">
                         By booking, you agree to our terms and conditions

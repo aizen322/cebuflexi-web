@@ -1,17 +1,30 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { 
+  User,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
+  signOut,
+  onAuthStateChanged,
+  updateProfile
+} from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase";
 
-// Mock user type
-interface MockUser {
+interface UserProfile {
   uid: string;
   email: string | null;
   displayName: string | null;
+  photoURL: string | null;
+  createdAt: Date;
 }
 
 interface AuthContextType {
-  user: MockUser | null;
+  user: UserProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -28,64 +41,102 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<MockUser | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate loading
-    const timer = setTimeout(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Get user profile from Firestore
+        const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+        
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            createdAt: userData.createdAt?.toDate() || new Date(),
+          });
+        } else {
+          // Create user profile if it doesn't exist
+          const newUserProfile = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            displayName: firebaseUser.displayName,
+            photoURL: firebaseUser.photoURL,
+            createdAt: new Date(),
+          };
+          
+          await setDoc(doc(db, "users", firebaseUser.uid), {
+            ...newUserProfile,
+            createdAt: new Date(),
+          });
+          
+          setUser(newUserProfile);
+        }
+      } else {
+        setUser(null);
+      }
       setLoading(false);
-    }, 1000);
+    });
 
-    return () => clearTimeout(timer);
+    return unsubscribe;
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Mock successful sign in
-    const mockUser: MockUser = {
-      uid: "mock-uid-123",
-      email: email,
-      displayName: email.split("@")[0],
-    };
-    
-    setUser(mockUser);
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
-  const signUp = async (email: string, password: string) => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  const signUp = async (email: string, password: string, displayName: string) => {
+    const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
     
-    // Mock successful sign up
-    const mockUser: MockUser = {
-      uid: "mock-uid-456",
-      email: email,
-      displayName: email.split("@")[0],
+    // Update Firebase Auth profile
+    await updateProfile(firebaseUser, {
+      displayName: displayName,
+    });
+
+    // Create user profile in Firestore
+    const userProfile = {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: displayName,
+      photoURL: firebaseUser.photoURL,
+      createdAt: new Date(),
     };
-    
-    setUser(mockUser);
+
+    await setDoc(doc(db, "users", firebaseUser.uid), {
+      ...userProfile,
+      createdAt: new Date(),
+    });
   };
 
   const signInWithGoogle = async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const provider = new GoogleAuthProvider();
+    const { user: firebaseUser } = await signInWithPopup(auth, provider);
     
-    // Mock successful Google sign in
-    const mockUser: MockUser = {
-      uid: "mock-google-uid-789",
-      email: "user@gmail.com",
-      displayName: "Google User",
-    };
+    // Check if user profile exists, create if not
+    const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
     
-    setUser(mockUser);
+    if (!userDoc.exists()) {
+      const userProfile = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+        createdAt: new Date(),
+      };
+
+      await setDoc(doc(db, "users", firebaseUser.uid), {
+        ...userProfile,
+        createdAt: new Date(),
+      });
+    }
   };
 
   const logout = async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setUser(null);
+    await signOut(auth);
   };
 
   const value = {

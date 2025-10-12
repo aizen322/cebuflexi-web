@@ -59,7 +59,7 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
     setError("");
 
     try {
-      await signUp(email, password);
+      await signUp(email, password, name);
       onOpenChange(false);
       setName("");
       setEmail("");
@@ -67,7 +67,21 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
       setConfirmPassword("");
       setAcceptTerms(false);
     } catch (err: any) {
-      setError(err.message || "Failed to create account. Please try again.");
+      let errorMessage = "Failed to create account. Please try again.";
+      
+      if (err.code === "auth/email-already-in-use") {
+        errorMessage = "An account with this email already exists. Please sign in instead.";
+      } else if (err.code === "auth/weak-password") {
+        errorMessage = "Password is too weak. Please choose a stronger password with at least 6 characters.";
+      } else if (err.code === "auth/invalid-email") {
+        errorMessage = "Please enter a valid email address.";
+      } else if (err.code === "auth/operation-not-allowed") {
+        errorMessage = "Account creation is currently disabled. Please contact support.";
+      } else if (err.code === "auth/network-request-failed") {
+        errorMessage = "Network error. Please check your internet connection and try again.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -81,7 +95,17 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
       await signInWithGoogle();
       onOpenChange(false);
     } catch (err: any) {
-      setError(err.message || "Failed to sign up with Google.");
+      let errorMessage = "Failed to sign up with Google. Please try again.";
+      
+      if (err.code === "auth/popup-closed-by-user") {
+        errorMessage = "Sign-up cancelled. Please try again if you want to continue.";
+      } else if (err.code === "auth/popup-blocked") {
+        errorMessage = "Popup blocked by browser. Please allow popups and try again.";
+      } else if (err.code === "auth/cancelled-popup-request") {
+        errorMessage = "Sign-up cancelled. Please try again.";
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

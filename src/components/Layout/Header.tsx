@@ -84,11 +84,15 @@ export function Header() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuItem disabled>
-                    My Account
+                  <DropdownMenuItem asChild>
+                    <Link href="/account/profile">
+                      My Account
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem disabled>
-                    Bookings
+                  <DropdownMenuItem asChild>
+                    <Link href="/account/bookings">
+                      Bookings
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
@@ -156,18 +160,18 @@ export function Header() {
                     <span className="text-sm">Account</span>
                   </div>
                   <div className="pl-6 space-y-2">
-                    <button 
-                      className="block text-sm text-gray-600 hover:text-blue-600 transition-colors disabled:opacity-50"
-                      disabled
+                    <Link 
+                      href="/account/profile"
+                      className="block text-sm text-gray-600 hover:text-blue-600 transition-colors"
                     >
                       My Account
-                    </button>
-                    <button 
-                      className="block text-sm text-gray-600 hover:text-blue-600 transition-colors disabled:opacity-50"
-                      disabled
+                    </Link>
+                    <Link 
+                      href="/account/bookings"
+                      className="block text-sm text-gray-600 hover:text-blue-600 transition-colors"
                     >
                       Bookings
-                    </button>
+                    </Link>
                     <button 
                       onClick={handleLogout}
                       className="block text-sm text-gray-600 hover:text-blue-600 transition-colors"

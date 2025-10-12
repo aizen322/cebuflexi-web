@@ -1,429 +1,505 @@
 import Head from "next/head";
-import { useState } from "react";
 import { useRouter } from "next/router";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { CalendarIcon, Car, Users, Fuel, Settings, MapPin, Phone, Mail, User, CreditCard, Shield, Clock } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  Car, 
+  Users, 
+  Fuel, 
+  Settings, 
+  Check, 
+  Calendar as CalendarIcon, 
+  Mail, 
+  Phone, 
+  User,
+  Clock,
+  MapPin
+} from "lucide-react";
 import { vehicles } from "@/lib/mockData";
-import { Vehicle } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
+import { createBooking, Booking } from "@/services/bookingService";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CarRentalBookingPage() {
   const router = useRouter();
   const { id } = router.query;
-  
-  const vehicle = vehicles.find((v) => v.id === id);
+  const vehicle = vehicles.find(v => v.id === id);
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
 
-  const [pickupDate, setPickupDate] = useState<Date>();
-  const [returnDate, setReturnDate] = useState<Date>();
-  const [addOns, setAddOns] = useState<string[]>([]);
-  
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+  const [selectedDates, setSelectedDates] = useState<{ from?: Date; to?: Date }>({});
+  const [bookingData, setBookingData] = useState({
+    name: "",
     email: "",
     phone: "",
-    address: "",
     pickupLocation: "",
+    dropoffLocation: "",
     specialRequests: "",
+    addOns: {
+      insurance: false,
+      gps: false,
+      childSeat: false,
+    }
   });
+  const [isBooking, setIsBooking] = useState(false);
+
+  // Update form data when user is authenticated
+  useEffect(() => {
+    if (user) {
+      setBookingData(prev => ({
+        ...prev,
+        name: user.displayName || "",
+        email: user.email || "",
+      }));
+    }
+  }, [user]);
 
   if (!vehicle) {
     return (
       <>
         <Header />
-        <main className="pt-20 min-h-screen flex items-center justify-center">
+        <div className="pt-20 min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">Vehicle Not Found</h1>
-            <p className="text-gray-600 mb-8">The vehicle you're looking for doesn't exist.</p>
-            <Button onClick={() => router.push("/car-rentals")}>Back to Car Rentals</Button>
+            <h1 className="text-4xl font-bold mb-4">Vehicle Not Found</h1>
+            <Button onClick={() => router.push("/car-rentals")}>Browse Vehicles</Button>
           </div>
-        </main>
+        </div>
         <Footer />
       </>
     );
   }
 
-  const rentalDays = pickupDate && returnDate ? differenceInDays(returnDate, pickupDate) : 0;
-  
-  const addOnPrices: { [key: string]: number } = {
-    gps: 200,
-    insurance: 500,
-    childSeat: 150,
-    dashcam: 250,
-    driver: 1500,
+  const calculateTotalPrice = () => {
+    if (!selectedDates.from || !selectedDates.to) return 0;
+    
+    const days = Math.ceil((selectedDates.to.getTime() - selectedDates.from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    let total = vehicle.pricePerDay * days;
+    
+    if (bookingData.addOns.insurance) total += 500 * days;
+    if (bookingData.addOns.gps) total += 200 * days;
+    if (bookingData.addOns.childSeat) total += 150 * days;
+    
+    return total;
   };
 
-  const addOnsTotal = addOns.reduce((sum, addon) => sum + addOnPrices[addon], 0);
-  const vehicleTotal = vehicle.pricePerDay * (rentalDays || 1);
-  const totalCost = vehicleTotal + addOnsTotal;
-
-  const handleAddOnToggle = (addon: string) => {
-    setAddOns((prev) =>
-      prev.includes(addon) ? prev.filter((a) => a !== addon) : [...prev, addon]
-    );
+  const getRentalDays = () => {
+    if (!selectedDates.from || !selectedDates.to) return 0;
+    return Math.ceil((selectedDates.to.getTime() - selectedDates.from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const bookingData = {
-      vehicle,
-      pickupDate,
-      returnDate,
-      rentalDays,
-      addOns,
-      totalCost,
-      ...formData,
-    };
+    // Check if user is authenticated
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to book a vehicle.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    console.log("Booking submitted:", bookingData);
-    alert("Booking request submitted! We'll contact you shortly to confirm your reservation.");
-    router.push("/car-rentals");
+    if (!selectedDates.from || !selectedDates.to) {
+      toast({
+        title: "Dates Required",
+        description: "Please select pickup and dropoff dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!bookingData.phone || !bookingData.pickupLocation) {
+      toast({
+        title: "Information Required",
+        description: "Please provide phone number and pickup location.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsBooking(true);
+
+    try {
+      const totalPrice = calculateTotalPrice();
+      const rentalDays = getRentalDays();
+      
+      const booking: Omit<Booking, "id" | "createdAt"> = {
+        userId: user.uid,
+        userEmail: user.email || "",
+        userName: user.displayName || "",
+        vehicleId: vehicle.id,
+        bookingType: "vehicle",
+        startDate: selectedDates.from,
+        endDate: selectedDates.to,
+        groupSize: 1, // Vehicle booking is typically for 1 group
+        totalPrice: totalPrice,
+        status: "pending",
+        specialRequests: bookingData.specialRequests,
+        contactPhone: bookingData.phone,
+        customizations: JSON.stringify({
+          pickupLocation: bookingData.pickupLocation,
+          dropoffLocation: bookingData.dropoffLocation,
+          addOns: bookingData.addOns,
+          rentalDays: rentalDays,
+        }),
+      };
+
+      const bookingId = await createBooking(booking);
+      
+      toast({
+        title: "Booking Confirmed!",
+        description: `Your vehicle rental has been submitted. Booking ID: ${bookingId}`,
+      });
+
+      // Reset form
+      setSelectedDates({});
+      setBookingData({
+        name: user.displayName || "",
+        email: user.email || "",
+        phone: "",
+        pickupLocation: "",
+        dropoffLocation: "",
+        specialRequests: "",
+        addOns: {
+          insurance: false,
+          gps: false,
+          childSeat: false,
+        }
+      });
+
+    } catch (error) {
+      console.error("Booking error:", error);
+      toast({
+        title: "Booking Failed",
+        description: "There was an error processing your booking. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBooking(false);
+    }
   };
 
   return (
     <>
       <Head>
-        <title>Book {vehicle.name} | CebuFlexi Tours Car Rentals</title>
-        <meta name="description" content={`Book ${vehicle.name} for your Cebu adventure. ${vehicle.type} with ${vehicle.capacity} seats. Starting at ₱${vehicle.pricePerDay}/day.`} />
-        <meta name="robots" content="noindex, nofollow" />
+        <title>Book {vehicle.name} | Car Rental - CebuFlexi Tours</title>
+        <meta name="description" content={`Book ${vehicle.name} for your Cebu adventure. ${vehicle.type} rental with ${vehicle.capacity} seats.`} />
+        <link rel="canonical" href={`https://cebuflexitours.com/car-rentals/booking/${vehicle.id}`} />
       </Head>
 
       <Header />
 
-      <main className="pt-20 pb-12 min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="mb-8">
-            <Button variant="ghost" onClick={() => router.back()}>
-              ← Back to Car Rentals
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Vehicle Details</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-col md:flex-row gap-6">
-                    <img
-                      src={vehicle.image}
-                      alt={vehicle.name}
-                      className="w-full md:w-64 h-48 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">{vehicle.name}</h2>
-                      <Badge className="mb-4">{vehicle.type}</Badge>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center text-gray-600">
-                          <Users className="h-4 w-4 mr-2" />
-                          <span>{vehicle.capacity} Passengers</span>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <Settings className="h-4 w-4 mr-2" />
-                          <span>{vehicle.transmission}</span>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <Fuel className="h-4 w-4 mr-2" />
-                          <span>{vehicle.fuelType}</span>
-                        </div>
-                        <div className="flex items-center text-gray-600">
-                          <Car className="h-4 w-4 mr-2" />
-                          <span>{vehicle.luggage} Luggage</span>
-                        </div>
+      <main className="pt-20 min-h-screen bg-gray-50">
+        <section className="py-8">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-2xl">Vehicle Details</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <div className="md:w-1/3">
+                        <img
+                          src={vehicle.image}
+                          alt={vehicle.name}
+                          className="w-full h-48 object-cover rounded-lg"
+                        />
                       </div>
+                      <div className="md:w-2/3">
+                        <h1 className="text-3xl font-bold mb-2">{vehicle.name}</h1>
+                        <Badge className="mb-4">{vehicle.type}</Badge>
+                        
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="flex items-center">
+                            <Users className="h-4 w-4 mr-2 text-blue-600" />
+                            <span className="text-sm">{vehicle.capacity} seats</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Settings className="h-4 w-4 mr-2 text-blue-600" />
+                            <span className="text-sm">{vehicle.transmission}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Fuel className="h-4 w-4 mr-2 text-blue-600" />
+                            <span className="text-sm">{vehicle.fuelType}</span>
+                          </div>
+                          <div className="flex items-center">
+                            <Car className="h-4 w-4 mr-2 text-blue-600" />
+                            <span className="text-sm">{vehicle.luggage} bags</span>
+                          </div>
+                        </div>
 
-                      <div className="mt-4">
-                        <h4 className="font-semibold mb-2">Features:</h4>
-                        <ul className="list-disc list-inside text-sm text-gray-600">
-                          {vehicle.features.map((feature, index) => (
-                            <li key={index}>{feature}</li>
+                        <div className="space-y-1">
+                          <h4 className="font-semibold mb-2">Features:</h4>
+                          {vehicle.features.map((feature, idx) => (
+                            <div key={idx} className="flex items-center text-sm">
+                              <Check className="h-4 w-4 mr-2 text-green-600" />
+                              {feature}
+                            </div>
                           ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Rental Details</CardTitle>
-                  <CardDescription>Select your pickup and return dates</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label>Pickup Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left font-normal mt-2">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {pickupDate ? format(pickupDate, "PPP") : "Select date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar mode="single" selected={pickupDate} onSelect={setPickupDate} initialFocus disabled={(date) => date < new Date()} />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    <div>
-                      <Label>Return Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start text-left font-normal mt-2">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {returnDate ? format(returnDate, "PPP") : "Select date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar mode="single" selected={returnDate} onSelect={setReturnDate} initialFocus disabled={(date) => !pickupDate || date <= pickupDate} />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="pickupLocation">Pickup Location</Label>
-                      <Select name="pickupLocation" onValueChange={(value) => setFormData({ ...formData, pickupLocation: value })}>
-                        <SelectTrigger className="mt-2">
-                          <SelectValue placeholder="Select pickup location" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="cebu-airport">Mactan-Cebu International Airport</SelectItem>
-                          <SelectItem value="cebu-city">Cebu City Center</SelectItem>
-                          <SelectItem value="mactan">Mactan Island Hotels</SelectItem>
-                          <SelectItem value="mandaue">Mandaue City</SelectItem>
-                          <SelectItem value="custom">Custom Location (Specify in notes)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {rentalDays > 0 && (
-                      <div className="flex items-center justify-center bg-blue-50 rounded-lg p-4">
-                        <Clock className="h-5 w-5 text-blue-600 mr-2" />
-                        <span className="text-lg font-semibold text-blue-900">
-                          {rentalDays} {rentalDays === 1 ? "Day" : "Days"} Rental
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Add-Ons & Extras</CardTitle>
-                  <CardDescription>Enhance your rental experience</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {vehicle.withDriver && (
-                      <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                        <div className="flex items-center space-x-3">
-                          <Checkbox id="driver" checked={addOns.includes("driver")} onCheckedChange={() => handleAddOnToggle("driver")} />
-                          <Label htmlFor="driver" className="flex-1 cursor-pointer">
-                            <div className="font-semibold">Professional Driver</div>
-                            <div className="text-sm text-gray-600">Experienced local driver included</div>
-                          </Label>
                         </div>
-                        <span className="font-semibold">₱1,500/day</span>
+
+                        {vehicle.withDriver && (
+                          <Badge className="mt-4 bg-green-600">Driver Available</Badge>
+                        )}
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="lg:col-span-1">
+                <Card className="sticky top-24">
+                  <CardHeader>
+                    <CardTitle>Book This Vehicle</CardTitle>
+                    <div className="text-3xl font-bold text-green-600">
+                      ₱{vehicle.pricePerDay.toLocaleString()}
+                      <span className="text-sm text-gray-500 font-normal ml-2">per day</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {!user && (
+                      <Alert className="mb-4">
+                        <AlertDescription>
+                          <strong>Sign in required:</strong> Please sign in to book this vehicle.
+                        </AlertDescription>
+                      </Alert>
                     )}
 
-                    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center space-x-3">
-                        <Checkbox id="gps" checked={addOns.includes("gps")} onCheckedChange={() => handleAddOnToggle("gps")} />
-                        <Label htmlFor="gps" className="flex-1 cursor-pointer">
-                          <div className="font-semibold">GPS Navigation</div>
-                          <div className="text-sm text-gray-600">Never get lost in Cebu</div>
-                        </Label>
-                      </div>
-                      <span className="font-semibold">₱200/day</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center space-x-3">
-                        <Checkbox id="insurance" checked={addOns.includes("insurance")} onCheckedChange={() => handleAddOnToggle("insurance")} />
-                        <Label htmlFor="insurance" className="flex-1 cursor-pointer">
-                          <div className="font-semibold">Full Insurance Coverage</div>
-                          <div className="text-sm text-gray-600">Complete peace of mind</div>
-                        </Label>
-                      </div>
-                      <span className="font-semibold">₱500/day</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center space-x-3">
-                        <Checkbox id="childSeat" checked={addOns.includes("childSeat")} onCheckedChange={() => handleAddOnToggle("childSeat")} />
-                        <Label htmlFor="childSeat" className="flex-1 cursor-pointer">
-                          <div className="font-semibold">Child Safety Seat</div>
-                          <div className="text-sm text-gray-600">Keep your little ones safe</div>
-                        </Label>
-                      </div>
-                      <span className="font-semibold">₱150/day</span>
-                    </div>
-
-                    <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center space-x-3">
-                        <Checkbox id="dashcam" checked={addOns.includes("dashcam")} onCheckedChange={() => handleAddOnToggle("dashcam")} />
-                        <Label htmlFor="dashcam" className="flex-1 cursor-pointer">
-                          <div className="font-semibold">Dash Camera</div>
-                          <div className="text-sm text-gray-600">Record your journey</div>
-                        </Label>
-                      </div>
-                      <span className="font-semibold">₱250/day</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>Enter your contact details</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <form onSubmit={handleBookingSubmit} className="space-y-4">
                       <div>
-                        <Label htmlFor="firstName">First Name *</Label>
-                        <Input id="firstName" name="firstName" value={formData.firstName} onChange={handleInputChange} required className="mt-2" />
+                        <Label htmlFor="name">Full Name *</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            id="name"
+                            required
+                            value={bookingData.name}
+                            onChange={(e) => setBookingData({...bookingData, name: e.target.value})}
+                            className="pl-10"
+                            placeholder="John Doe"
+                            disabled={!!user}
+                          />
+                        </div>
+                        {user && (
+                          <p className="text-xs text-gray-500 mt-1">Pre-filled from your account</p>
+                        )}
                       </div>
-                      <div>
-                        <Label htmlFor="lastName">Last Name *</Label>
-                        <Input id="lastName" name="lastName" value={formData.lastName} onChange={handleInputChange} required className="mt-2" />
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="email">Email Address *</Label>
-                        <Input id="email" name="email" type="email" value={formData.email} onChange={handleInputChange} required className="mt-2" />
+                        <Label htmlFor="email">Email *</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            id="email"
+                            type="email"
+                            required
+                            value={bookingData.email}
+                            onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
+                            className="pl-10"
+                            placeholder="john@example.com"
+                            disabled={!!user}
+                          />
+                        </div>
+                        {user && (
+                          <p className="text-xs text-gray-500 mt-1">Pre-filled from your account</p>
+                        )}
                       </div>
+
                       <div>
                         <Label htmlFor="phone">Phone Number *</Label>
-                        <Input id="phone" name="phone" type="tel" value={formData.phone} onChange={handleInputChange} required className="mt-2" />
+                        <div className="relative">
+                          <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            id="phone"
+                            type="tel"
+                            required
+                            value={bookingData.phone}
+                            onChange={(e) => setBookingData({...bookingData, phone: e.target.value})}
+                            className="pl-10"
+                            placeholder="+63 912 345 6789"
+                          />
+                        </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <Label htmlFor="address">Address *</Label>
-                      <Input id="address" name="address" value={formData.address} onChange={handleInputChange} required className="mt-2" />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="specialRequests">Special Requests or Notes</Label>
-                      <Textarea id="specialRequests" name="specialRequests" value={formData.specialRequests} onChange={handleInputChange} placeholder="Any special requirements or requests?" className="mt-2 min-h-[100px]" />
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="lg:col-span-1">
-              <Card className="sticky top-24">
-                <CardHeader>
-                  <CardTitle>Booking Summary</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">{vehicle.name}</h4>
-                    <p className="text-sm text-gray-600">{vehicle.type}</p>
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2 text-sm">
-                    {pickupDate && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Pickup:</span>
-                        <span className="font-medium">{format(pickupDate, "MMM dd, yyyy")}</span>
+                      <div>
+                        <Label htmlFor="pickup">Pickup Location *</Label>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            id="pickup"
+                            required
+                            value={bookingData.pickupLocation}
+                            onChange={(e) => setBookingData({...bookingData, pickupLocation: e.target.value})}
+                            className="pl-10"
+                            placeholder="Cebu City or Airport"
+                          />
+                        </div>
                       </div>
-                    )}
-                    {returnDate && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Return:</span>
-                        <span className="font-medium">{format(returnDate, "MMM dd, yyyy")}</span>
-                      </div>
-                    )}
-                    {rentalDays > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Duration:</span>
-                        <span className="font-medium">{rentalDays} {rentalDays === 1 ? "Day" : "Days"}</span>
-                      </div>
-                    )}
-                  </div>
 
-                  <Separator />
+                      <div>
+                        <Label htmlFor="dropoff">Drop-off Location</Label>
+                        <div className="relative">
+                          <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                          <Input
+                            id="dropoff"
+                            value={bookingData.dropoffLocation}
+                            onChange={(e) => setBookingData({...bookingData, dropoffLocation: e.target.value})}
+                            className="pl-10"
+                            placeholder="Same as pickup (if different)"
+                          />
+                        </div>
+                      </div>
 
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Vehicle Rental</span>
-                      <span>₱{vehicleTotal.toLocaleString()}</span>
-                    </div>
-                    {addOns.length > 0 && (
-                      <>
-                        <div className="text-sm font-medium text-gray-700">Add-ons:</div>
-                        {addOns.map((addon) => (
-                          <div key={addon} className="flex justify-between text-sm pl-4">
-                            <span className="text-gray-600 capitalize">{addon === "gps" ? "GPS" : addon}</span>
-                            <span>₱{(addOnPrices[addon] * (rentalDays || 1)).toLocaleString()}</span>
+                      <div>
+                        <Label>Rental Period *</Label>
+                        <Calendar
+                          mode="range"
+                          selected={selectedDates}
+                          onSelect={(range) => setSelectedDates(range || {})}
+                          disabled={(date) => date < new Date()}
+                          className="rounded-md border"
+                        />
+                      </div>
+
+                      <div>
+                        <Label className="text-base font-semibold mb-3 block">Add-ons</Label>
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="insurance"
+                                checked={bookingData.addOns.insurance}
+                                onChange={(e) => setBookingData({
+                                  ...bookingData, 
+                                  addOns: {...bookingData.addOns, insurance: e.target.checked}
+                                })}
+                                className="rounded"
+                              />
+                              <Label htmlFor="insurance" className="cursor-pointer">
+                                Full Insurance Coverage
+                              </Label>
+                            </div>
+                            <span className="text-sm text-gray-600">+₱500/day</span>
                           </div>
-                        ))}
-                      </>
-                    )}
-                  </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="gps"
+                                checked={bookingData.addOns.gps}
+                                onChange={(e) => setBookingData({
+                                  ...bookingData, 
+                                  addOns: {...bookingData.addOns, gps: e.target.checked}
+                                })}
+                                className="rounded"
+                              />
+                              <Label htmlFor="gps" className="cursor-pointer">
+                                GPS Navigation
+                              </Label>
+                            </div>
+                            <span className="text-sm text-gray-600">+₱200/day</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="childSeat"
+                                checked={bookingData.addOns.childSeat}
+                                onChange={(e) => setBookingData({
+                                  ...bookingData, 
+                                  addOns: {...bookingData.addOns, childSeat: e.target.checked}
+                                })}
+                                className="rounded"
+                              />
+                              <Label htmlFor="childSeat" className="cursor-pointer">
+                                Child Safety Seat
+                              </Label>
+                            </div>
+                            <span className="text-sm text-gray-600">+₱150/day</span>
+                          </div>
+                        </div>
+                      </div>
 
-                  <Separator />
+                      <div>
+                        <Label htmlFor="requests">Special Requests</Label>
+                        <Textarea
+                          id="requests"
+                          value={bookingData.specialRequests}
+                          onChange={(e) => setBookingData({...bookingData, specialRequests: e.target.value})}
+                          placeholder="Additional driver, specific pickup time, etc."
+                          rows={3}
+                        />
+                      </div>
 
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Total</span>
-                    <span className="text-blue-600">₱{totalCost.toLocaleString()}</span>
-                  </div>
+                      <div className="border-t pt-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span>Base price:</span>
+                            <span>₱{vehicle.pricePerDay.toLocaleString()}/day</span>
+                          </div>
+                          {selectedDates.from && selectedDates.to && (
+                            <div className="flex justify-between">
+                              <span>Days:</span>
+                              <span>{getRentalDays()} days</span>
+                            </div>
+                          )}
+                          {bookingData.addOns.insurance && selectedDates.from && selectedDates.to && (
+                            <div className="flex justify-between">
+                              <span>Insurance:</span>
+                              <span>₱{(500 * getRentalDays()).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {bookingData.addOns.gps && selectedDates.from && selectedDates.to && (
+                            <div className="flex justify-between">
+                              <span>GPS:</span>
+                              <span>₱{(200 * getRentalDays()).toLocaleString()}</span>
+                            </div>
+                          )}
+                          {bookingData.addOns.childSeat && selectedDates.from && selectedDates.to && (
+                            <div className="flex justify-between">
+                              <span>Child Seat:</span>
+                              <span>₱{(150 * getRentalDays()).toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
+                          <span>Total:</span>
+                          <span className="text-green-600">₱{calculateTotalPrice().toLocaleString()}</span>
+                        </div>
+                      </div>
 
-                  <div className="bg-blue-50 p-4 rounded-lg text-sm text-blue-900">
-                    <Shield className="h-5 w-5 mb-2" />
-                    <p className="font-semibold mb-1">Secure Booking</p>
-                    <p className="text-xs">Your information is protected and secure</p>
-                  </div>
-
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700" 
-                    size="lg"
-                    onClick={handleSubmit}
-                    disabled={!pickupDate || !returnDate || !formData.firstName || !formData.email}
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Complete Booking
-                  </Button>
-
-                  <p className="text-xs text-gray-500 text-center">
-                    By booking, you agree to our terms and conditions
-                  </p>
-                </CardContent>
-              </Card>
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-green-600 hover:bg-green-700" 
+                        size="lg"
+                        disabled={isBooking || authLoading}
+                      >
+                        {isBooking ? "Processing..." : "Book Vehicle"}
+                      </Button>
+                      <p className="text-xs text-center text-gray-500">
+                        By booking, you agree to our terms and conditions
+                      </p>
+                    </form>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
       </main>
 
       <Footer />
