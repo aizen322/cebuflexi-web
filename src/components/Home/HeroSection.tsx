@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
+import { motion } from "framer-motion";
 
 export function HeroSection() {
   const router = useRouter();
@@ -21,27 +22,45 @@ export function HeroSection() {
 
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
-      <div
+      <motion.div
         className="absolute inset-0 bg-cover bg-center bg-fixed"
         style={{
           backgroundImage: "url('https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1920&h=1080&fit=crop')",
         }}
+        initial={{ scale: 1.1 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 1.2, ease: "easeOut" }}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-black/50"></div>
-      </div>
+      </motion.div>
 
       <div className="relative z-10 container mx-auto px-4 text-center">
-        <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-lg">
+        <motion.h1 
+          className="text-5xl md:text-7xl font-bold text-white mb-6 drop-shadow-lg"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+        >
           Discover the Beauty of <span className="text-blue-400">Cebu</span>
-        </h1>
-        <p className="text-xl md:text-2xl text-white mb-12 max-w-3xl mx-auto drop-shadow-md">
+        </motion.h1>
+        <motion.p 
+          className="text-xl md:text-2xl text-white mb-12 max-w-3xl mx-auto drop-shadow-md"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.4 }}
+        >
           Experience world-class beaches, rich history, and unforgettable adventures in the heart of the Philippines
-        </p>
+        </motion.p>
 
-        <div className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl mx-auto">
+        <motion.div 
+          className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl mx-auto"
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <Select value={tourType} onValueChange={setTourType}>
-              <SelectTrigger>
+              <SelectTrigger className="transition-all duration-200 hover:border-blue-400">
                 <SelectValue placeholder="Tour Type" />
               </SelectTrigger>
               <SelectContent>
@@ -53,7 +72,7 @@ export function HeroSection() {
             </Select>
 
             <Button 
-              className="bg-blue-600 hover:bg-blue-700 w-full"
+              className="bg-blue-600 hover:bg-blue-700 w-full transition-all duration-300 hover:scale-105"
               onClick={handleSearch}
             >
               <Search className="mr-2 h-4 w-4" />
@@ -63,12 +82,12 @@ export function HeroSection() {
 
           <Button 
             size="lg" 
-            className="bg-green-600 hover:bg-green-700 text-lg px-8 py-6 w-full md:w-auto"
+            className="bg-green-600 hover:bg-green-700 text-lg px-8 py-6 w-full md:w-auto transition-all duration-300 hover:scale-105"
             onClick={handleSearch}
           >
             Book Your Cebu Adventure
           </Button>
-        </div>
+        </motion.div>
       </div>
 
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">

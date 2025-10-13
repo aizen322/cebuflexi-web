@@ -70,12 +70,12 @@ export default function CarRentalsPage() {
       <Header />
 
       <main className="pt-20 min-h-screen">
-        <section className="bg-gradient-to-r from-green-600 to-green-800 text-white py-16">
+        <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
           <div className="container mx-auto px-4">
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Explore Cebu Your Way
             </h1>
-            <p className="text-xl text-green-100 max-w-2xl">
+            <p className="text-xl text-blue-100 max-w-2xl">
               Rent a reliable vehicle with flexible options. Choose from sedans, SUVs, or vans - with or without a driver. Perfect for airport transfers, island tours, or extended stays.
             </p>
           </div>
@@ -137,7 +137,7 @@ export default function CarRentalsPage() {
                       </Select>
                     </div>
 
-                    <Button onClick={applyFilters} className="w-full bg-green-600 hover:bg-green-700">
+                    <Button onClick={applyFilters} className="w-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105">
                       Apply Filters
                     </Button>
                   </CardContent>
@@ -152,153 +152,158 @@ export default function CarRentalsPage() {
 
                 <div className="grid grid-cols-1 gap-6 mb-12">
                   {filteredVehicles.map((vehicle) => (
-                    <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-shadow">
-                      <div className="flex flex-col md:flex-row">
-                        <div className="md:w-1/3 h-64 md:h-auto relative">
-                          <img
-                            src={vehicle.image}
-                            alt={`${vehicle.name} - Car rental in Cebu`}
-                            className="w-full h-full object-cover"
-                          />
-                          {vehicle.withDriver && (
-                            <Badge className="absolute top-4 left-4 bg-green-600">With Driver Available</Badge>
-                          )}
-                        </div>
+                        <Card className="overflow-hidden hover:shadow-xl transition-shadow group">
+                          <div className="flex flex-col md:flex-row">
+                            <div className="md:w-1/3 h-64 md:h-auto relative">
+                              <img
+                                src={vehicle.image}
+                                alt={`${vehicle.name} - Car rental in Cebu`}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              />
+                              {vehicle.withDriver && (
+                                <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">With Driver Available</Badge>
+                              )}
+                            </div>
 
-                        <div className="md:w-2/3 p-6 flex flex-col justify-between">
-                          <div>
-                            <div className="flex items-start justify-between mb-3">
+                            <div className="md:w-2/3 p-6 flex flex-col justify-between">
                               <div>
-                                <h3 className="text-2xl font-bold mb-1">{vehicle.name}</h3>
-                                <p className="text-gray-600">{vehicle.type}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-3xl font-bold text-green-600">₱{vehicle.pricePerDay.toLocaleString()}</p>
-                                <p className="text-sm text-gray-500">per day</p>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                              <div className="flex items-center text-sm">
-                                <Users className="h-4 w-4 mr-2 text-green-600" />
-                                <span>{vehicle.capacity} seats</span>
-                              </div>
-                              <div className="flex items-center text-sm">
-                                <Settings className="h-4 w-4 mr-2 text-green-600" />
-                                <span>{vehicle.transmission}</span>
-                              </div>
-                              <div className="flex items-center text-sm">
-                                <Fuel className="h-4 w-4 mr-2 text-green-600" />
-                                <span>{vehicle.fuelType}</span>
-                              </div>
-                              <div className="flex items-center text-sm">
-                                <Car className="h-4 w-4 mr-2 text-green-600" />
-                                <span>{vehicle.luggage} bags</span>
-                              </div>
-                            </div>
-
-                            <div className="space-y-1 mb-4">
-                              {vehicle.features.map((feature, idx) => (
-                                <div key={idx} className="flex items-center text-sm text-gray-600">
-                                  <Check className="h-4 w-4 mr-2 text-green-600" />
-                                  {feature}
+                                <div className="flex items-start justify-between mb-3">
+                                  <div>
+                                    <h3 className="text-2xl font-bold mb-1 group-hover:text-blue-600 transition-colors duration-300">{vehicle.name}</h3>
+                                    <p className="text-gray-600">{vehicle.type}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-3xl font-bold text-blue-600">₱{vehicle.pricePerDay.toLocaleString()}</p>
+                                    <p className="text-sm text-gray-500">per day</p>
+                                  </div>
                                 </div>
-                              ))}
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                  <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
+                                    <Users className="h-4 w-4 mr-2 text-blue-600" />
+                                    <span>{vehicle.capacity} seats</span>
+                                  </div>
+                                  <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
+                                    <Settings className="h-4 w-4 mr-2 text-blue-600" />
+                                    <span>{vehicle.transmission}</span>
+                                  </div>
+                                  <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
+                                    <Fuel className="h-4 w-4 mr-2 text-blue-600" />
+                                    <span>{vehicle.fuelType}</span>
+                                  </div>
+                                  <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
+                                    <Car className="h-4 w-4 mr-2 text-blue-600" />
+                                    <span>{vehicle.luggage} bags</span>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1 mb-4">
+                                  {vehicle.features.map((feature, idx) => (
+                                    <div key={idx} className="flex items-center text-sm text-gray-600 transition-transform duration-300 hover:translate-x-1">
+                                      <Check className="h-4 w-4 mr-2 text-blue-600" />
+                                      {feature}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+
+                              <div className="flex gap-3">
+                                <Button 
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105"
+                                  onClick={() => window.location.href = `/car-rentals/booking/${vehicle.id}`}
+                                >
+                                  Book Now
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  className="flex-1 transition-all duration-300 hover:scale-105"
+                                  onClick={() => window.location.href = `/car-rentals/booking/${vehicle.id}`}
+                                >
+                                  View Details
+                                </Button>
+                              </div>
                             </div>
                           </div>
-
-                          <div className="flex gap-3">
-                            <Button 
-                              className="flex-1 bg-green-600 hover:bg-green-700"
-                              onClick={() => window.location.href = `/car-rentals/booking/${vehicle.id}`}
-                            >
-                              Book Now
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="flex-1"
-                              onClick={() => window.location.href = `/car-rentals/booking/${vehicle.id}`}
-                            >
-                              View Details
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
+                        </Card>
                   ))}
                 </div>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Rental Price Calculator</CardTitle>
-                    <CardDescription>Estimate your total rental cost with add-ons</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="days">Number of Days</Label>
-                        <Input
-                          id="days"
-                          type="number"
-                          min="1"
-                          value={rentalCalculator.days}
-                          onChange={(e) => setRentalCalculator({...rentalCalculator, days: Number(e.target.value)})}
-                        />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Rental Price Calculator</CardTitle>
+                      <CardDescription>Estimate your total rental cost with add-ons</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="days">Number of Days</Label>
+                          <Input
+                            id="days"
+                            type="number"
+                            min="1"
+                            value={rentalCalculator.days}
+                            onChange={(e) => setRentalCalculator({...rentalCalculator, days: Number(e.target.value)})}
+                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="mileage">Estimated Mileage (km/day)</Label>
+                          <Input
+                            id="mileage"
+                            type="number"
+                            min="50"
+                            value={rentalCalculator.mileage}
+                            onChange={(e) => setRentalCalculator({...rentalCalculator, mileage: Number(e.target.value)})}
+                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor="mileage">Estimated Mileage (km/day)</Label>
-                        <Input
-                          id="mileage"
-                          type="number"
-                          min="50"
-                          value={rentalCalculator.mileage}
-                          onChange={(e) => setRentalCalculator({...rentalCalculator, mileage: Number(e.target.value)})}
-                        />
-                      </div>
-                    </div>
 
-                    <div className="space-y-3">
-                      <h4 className="font-semibold">Add-ons</h4>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="insurance"
-                          checked={rentalCalculator.insurance}
-                          onCheckedChange={(checked) => setRentalCalculator({...rentalCalculator, insurance: checked as boolean})}
-                        />
-                        <Label htmlFor="insurance" className="cursor-pointer">
-                          Full Insurance Coverage (+₱500/day)
-                        </Label>
+                      <div className="space-y-3">
+                        <h4 className="font-semibold">Add-ons</h4>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="insurance"
+                            checked={rentalCalculator.insurance}
+                            onCheckedChange={(checked) => setRentalCalculator({...rentalCalculator, insurance: checked as boolean})}
+                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                          />
+                          <Label htmlFor="insurance" className="cursor-pointer">
+                            Full Insurance Coverage (+₱500/day)
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="gps"
+                            checked={rentalCalculator.gps}
+                            onCheckedChange={(checked) => setRentalCalculator({...rentalCalculator, gps: checked as boolean})}
+                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                          />
+                          <Label htmlFor="gps" className="cursor-pointer">
+                            GPS Navigation (+₱200/day)
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="childSeat"
+                            checked={rentalCalculator.childSeat}
+                            onCheckedChange={(checked) => setRentalCalculator({...rentalCalculator, childSeat: checked as boolean})}
+                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                          />
+                          <Label htmlFor="childSeat" className="cursor-pointer">
+                            Child Safety Seat (+₱150/day)
+                          </Label>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="gps"
-                          checked={rentalCalculator.gps}
-                          onCheckedChange={(checked) => setRentalCalculator({...rentalCalculator, gps: checked as boolean})}
-                        />
-                        <Label htmlFor="gps" className="cursor-pointer">
-                          GPS Navigation (+₱200/day)
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="childSeat"
-                          checked={rentalCalculator.childSeat}
-                          onCheckedChange={(checked) => setRentalCalculator({...rentalCalculator, childSeat: checked as boolean})}
-                        />
-                        <Label htmlFor="childSeat" className="cursor-pointer">
-                          Child Safety Seat (+₱150/day)
-                        </Label>
-                      </div>
-                    </div>
 
-                    <div className="border-t pt-4">
-                      <p className="text-sm text-gray-600 mb-2">Example: Toyota Fortuner at ₱3,500/day</p>
-                      <div className="text-2xl font-bold text-green-600">
-                        Total Estimate: ₱{calculateTotal(3500).toLocaleString()}
+                      <div className="border-t pt-4">
+                        <p className="text-sm text-gray-600 mb-2">Example: Toyota Fortuner at ₱3,500/day</p>
+                        <div className="text-2xl font-bold text-blue-600">
+                          Total Estimate: ₱{calculateTotal(3500).toLocaleString()}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
               </div>
             </div>
           </div>

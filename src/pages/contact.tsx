@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
+import { motion } from "framer-motion";
+import { FadeIn } from "@/components/Animation/FadeIn";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -87,10 +89,12 @@ export default function ContactPage() {
       <main className="pt-20 min-h-screen">
         <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-16">
           <div className="container mx-auto px-4 text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Get In Touch</h1>
-            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
-              Have questions? We're here to help you plan your perfect Cebu adventure.
-            </p>
+            <FadeIn>
+              <h1 className="text-4xl md:text-5xl font-bold mb-4">Get In Touch</h1>
+              <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+                Have questions? We're here to help you plan your perfect Cebu adventure.
+              </p>
+            </FadeIn>
           </div>
         </section>
 
@@ -98,145 +102,176 @@ export default function ContactPage() {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-2xl">Send Us a Message</CardTitle>
-                    <CardDescription>Fill out the form below and we'll respond within 24 hours</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="name">Full Name *</Label>
-                          <Input
-                            id="name"
-                            required
-                            value={formData.name}
-                            onChange={(e) => setFormData({...formData, name: e.target.value})}
-                            placeholder="John Doe"
-                          />
+                <FadeIn direction="left">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-2xl">Send Us a Message</CardTitle>
+                      <CardDescription>Fill out the form below and we'll respond within 24 hours</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="name">Full Name *</Label>
+                            <Input
+                              id="name"
+                              required
+                              value={formData.name}
+                              onChange={(e) => setFormData({...formData, name: e.target.value})}
+                              placeholder="John Doe"
+                              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="email">Email Address *</Label>
+                            <Input
+                              id="email"
+                              type="email"
+                              required
+                              value={formData.email}
+                              onChange={(e) => setFormData({...formData, email: e.target.value})}
+                              placeholder="john@example.com"
+                              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
                         </div>
-                        <div>
-                          <Label htmlFor="email">Email Address *</Label>
-                          <Input
-                            id="email"
-                            type="email"
-                            required
-                            value={formData.email}
-                            onChange={(e) => setFormData({...formData, email: e.target.value})}
-                            placeholder="john@example.com"
-                          />
-                        </div>
-                      </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="phone">Phone Number</Label>
-                          <Input
-                            id="phone"
-                            type="tel"
-                            value={formData.phone}
-                            onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                            placeholder="+63 912 345 6789"
-                          />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <Input
+                              id="phone"
+                              type="tel"
+                              value={formData.phone}
+                              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                              placeholder="+63 912 345 6789"
+                              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="subject">Subject *</Label>
+                            <Input
+                              id="subject"
+                              required
+                              value={formData.subject}
+                              onChange={(e) => setFormData({...formData, subject: e.target.value})}
+                              placeholder="Tour inquiry"
+                              className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
                         </div>
+
                         <div>
-                          <Label htmlFor="subject">Subject *</Label>
-                          <Input
-                            id="subject"
+                          <Label htmlFor="message">Your Message *</Label>
+                          <Textarea
+                            id="message"
                             required
-                            value={formData.subject}
-                            onChange={(e) => setFormData({...formData, subject: e.target.value})}
-                            placeholder="Tour inquiry"
+                            value={formData.message}
+                            onChange={(e) => setFormData({...formData, message: e.target.value})}
+                            placeholder="Tell us about your trip plans, questions, or special requests..."
+                            rows={6}
+                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
                           />
                         </div>
-                      </div>
 
-                      <div>
-                        <Label htmlFor="message">Your Message *</Label>
-                        <Textarea
-                          id="message"
-                          required
-                          value={formData.message}
-                          onChange={(e) => setFormData({...formData, message: e.target.value})}
-                          placeholder="Tell us about your trip plans, questions, or special requests..."
-                          rows={6}
-                        />
-                      </div>
-
-                      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" size="lg">
-                        <Send className="h-4 w-4 mr-2" />
-                        Send Message
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
+                        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105" size="lg">
+                          <Send className="h-4 w-4 mr-2" />
+                          Send Message
+                        </Button>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </FadeIn>
               </div>
 
               <div className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Contact Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-start">
-                      <MapPin className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0 mt-1" />
-                      <div>
-                        <p className="font-semibold mb-1">Office Address</p>
-                        <p className="text-sm text-gray-600">
-                          123 Osmena Boulevard<br />
-                          Cebu City, 6000<br />
-                          Philippines
-                        </p>
+                <FadeIn direction="right">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Contact Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-start group">
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <MapPin className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0 mt-1 transition-transform duration-300 group-hover:scale-110" />
+                        </motion.div>
+                        <div>
+                          <p className="font-semibold mb-1">Office Address</p>
+                          <p className="text-sm text-gray-600">
+                            123 Osmena Boulevard<br />
+                            Cebu City, 6000<br />
+                            Philippines
+                          </p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-start">
-                      <Phone className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0 mt-1" />
-                      <div>
-                        <p className="font-semibold mb-1">Phone</p>
-                        <p className="text-sm text-gray-600">+63 32 123 4567</p>
-                        <p className="text-sm text-gray-600">+63 917 890 1234</p>
+                      <div className="flex items-start group">
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <Phone className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0 mt-1 transition-transform duration-300 group-hover:scale-110" />
+                        </motion.div>
+                        <div>
+                          <p className="font-semibold mb-1">Phone</p>
+                          <p className="text-sm text-gray-600">+63 32 123 4567</p>
+                          <p className="text-sm text-gray-600">+63 917 890 1234</p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-start">
-                      <Mail className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0 mt-1" />
-                      <div>
-                        <p className="font-semibold mb-1">Email</p>
-                        <p className="text-sm text-gray-600">info@cebuflexitours.com</p>
-                        <p className="text-sm text-gray-600">bookings@cebuflexitours.com</p>
+                      <div className="flex items-start group">
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <Mail className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0 mt-1 transition-transform duration-300 group-hover:scale-110" />
+                        </motion.div>
+                        <div>
+                          <p className="font-semibold mb-1">Email</p>
+                          <p className="text-sm text-gray-600">info@cebuflexitours.com</p>
+                          <p className="text-sm text-gray-600">bookings@cebuflexitours.com</p>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-start">
-                      <Clock className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0 mt-1" />
-                      <div>
-                        <p className="font-semibold mb-1">Business Hours</p>
-                        <p className="text-sm text-gray-600">Monday - Saturday: 8:00 AM - 6:00 PM</p>
-                        <p className="text-sm text-gray-600">Sunday: 9:00 AM - 3:00 PM</p>
+                      <div className="flex items-start group">
+                        <motion.div
+                          whileHover={{ scale: 1.1, rotate: 5 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <Clock className="h-5 w-5 mr-3 text-blue-600 flex-shrink-0 mt-1 transition-transform duration-300 group-hover:scale-110" />
+                        </motion.div>
+                        <div>
+                          <p className="font-semibold mb-1">Business Hours</p>
+                          <p className="text-sm text-gray-600">Monday - Saturday: 8:00 AM - 6:00 PM</p>
+                          <p className="text-sm text-gray-600">Sunday: 9:00 AM - 3:00 PM</p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </FadeIn>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>24/7 Emergency Support</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-gray-600 mb-3">
-                      For guests currently on tour experiencing emergencies:
-                    </p>
-                    <div className="flex items-center space-x-2 bg-red-50 p-3 rounded-lg">
-                      <Phone className="h-5 w-5 text-red-600" />
-                      <div>
-                        <p className="font-bold text-red-600">+63 917 911 0000</p>
-                        <p className="text-xs text-red-600">Available 24/7</p>
+                <FadeIn direction="right" delay={0.2}>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>24/7 Emergency Support</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-gray-600 mb-3">
+                        For guests currently on tour experiencing emergencies:
+                      </p>
+                      <div className="flex items-center space-x-2 bg-red-50 p-3 rounded-lg">
+                        <Phone className="h-5 w-5 text-red-600" />
+                        <div>
+                          <p className="font-bold text-red-600">+63 917 911 0000</p>
+                          <p className="text-xs text-red-600">Available 24/7</p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                </FadeIn>
               </div>
             </div>
           </div>
@@ -244,52 +279,58 @@ export default function ContactPage() {
 
         <section className="py-12 bg-gray-50">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
-                Find quick answers to common questions about our tours and services
-              </p>
-            </div>
+            <FadeIn>
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Find quick answers to common questions about our tours and services
+                </p>
+              </div>
+            </FadeIn>
 
-            <div className="max-w-3xl mx-auto">
-              <Accordion type="single" collapsible className="space-y-4">
-                {faqs.map((faq, idx) => (
-                  <AccordionItem key={idx} value={`item-${idx}`} className="bg-white rounded-lg px-6">
-                    <AccordionTrigger className="text-left font-semibold hover:text-blue-600">
-                      {faq.question}
-                    </AccordionTrigger>
-                    <AccordionContent className="text-gray-600">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
+            <FadeIn delay={0.2}>
+              <div className="max-w-3xl mx-auto">
+                <Accordion type="single" collapsible className="space-y-4">
+                  {faqs.map((faq, idx) => (
+                    <AccordionItem key={idx} value={`item-${idx}`} className="bg-white rounded-lg px-6 hover:shadow-lg transition-all duration-300">
+                      <AccordionTrigger className="text-left font-semibold hover:text-blue-600 transition-colors duration-300">
+                        {faq.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-gray-600">
+                        {faq.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+            </FadeIn>
           </div>
         </section>
 
         <section className="py-12">
           <div className="container mx-auto px-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Visit Our Office</CardTitle>
-                <CardDescription>Find us in the heart of Cebu City</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="aspect-video rounded-lg overflow-hidden">
-                  <iframe
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3925.3576563!2d123.8854!3d10.2968!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDE3JzQ4LjUiTiAxMjPCsDUzJzA3LjQiRQ!5e0!3m2!1sen!2sph!4v1234567890"
-                    width="100%"
-                    height="100%"
-                    style={{ border: 0 }}
-                    allowFullScreen
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                    title="CebuFlexi Tours Office Location"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            <FadeIn>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Visit Our Office</CardTitle>
+                  <CardDescription>Find us in the heart of Cebu City</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="aspect-video rounded-lg overflow-hidden">
+                    <iframe
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3925.3576563!2d123.8854!3d10.2968!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDE3JzQ4LjUiTiAxMjPCsDUzJzA3LjQiRQ!5e0!3m2!1sen!2sph!4v1234567890"
+                      width="100%"
+                      height="100%"
+                      style={{ border: 0 }}
+                      allowFullScreen
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title="CebuFlexi Tours Office Location"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </FadeIn>
           </div>
         </section>
       </main>

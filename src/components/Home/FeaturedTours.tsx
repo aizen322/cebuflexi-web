@@ -4,71 +4,82 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge";
 import { Clock, Users, MapPin } from "lucide-react";
 import { featuredTours } from "@/lib/mockData";
+import { motion } from "framer-motion";
+import { FadeIn } from "@/components/Animation/FadeIn";
+import { StaggerContainer, staggerItem } from "@/components/Animation/StaggerContainer";
 
 export function FeaturedTours() {
   return (
     <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Featured Tour Packages
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover our handpicked selection of the best tours Cebu has to offer
-          </p>
-        </div>
+        <FadeIn>
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Featured Tour Packages
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Discover our handpicked selection of the best tours Cebu has to offer
+            </p>
+          </div>
+        </FadeIn>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {featuredTours.map((tour) => (
-            <Card key={tour.id} className="overflow-hidden hover:shadow-xl transition-shadow duration-300">
-              <div className="relative h-64 overflow-hidden">
-                <img
-                  src={tour.images[0]}
-                  alt={tour.title}
-                  className="w-full h-full object-cover hover:scale-110 transition-transform duration-300"
-                />
-                <Badge className="absolute top-4 left-4 bg-blue-600">{tour.category}</Badge>
-              </div>
-              <CardHeader>
-                <CardTitle className="text-xl">{tour.title}</CardTitle>
-                <CardDescription className="min-h-[48px]">{tour.shortDescription}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2" />
-                    <span>{tour.duration} {tour.duration === 1 ? "Day" : "Days"}</span>
+        <StaggerContainer>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {featuredTours.map((tour) => (
+              <motion.div key={tour.id} variants={staggerItem}>
+                <Card className="overflow-hidden hover:shadow-xl transition-shadow duration-300 group">
+                  <div className="relative h-64 overflow-hidden">
+                    <img
+                      src={tour.images[0]}
+                      alt={tour.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">{tour.category}</Badge>
                   </div>
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 mr-2" />
-                    <span>{tour.groupSize.min}-{tour.groupSize.max} People</span>
-                  </div>
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-2" />
-                    <span>{tour.location}</span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <span className="text-2xl font-bold text-blue-600">₱{tour.price.toLocaleString()}</span>
-                  <span className="text-sm text-gray-500"> per person</span>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Link href={`/tours/${tour.id}`} className="w-full">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">Book Now</Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                  <CardHeader>
+                    <CardTitle className="text-xl group-hover:text-blue-600 transition-colors duration-300">{tour.title}</CardTitle>
+                    <CardDescription className="min-h-[48px]">{tour.shortDescription}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div className="flex items-center transition-transform duration-300 hover:translate-x-1">
+                        <Clock className="h-4 w-4 mr-2" />
+                        <span>{tour.duration} {tour.duration === 1 ? "Day" : "Days"}</span>
+                      </div>
+                      <div className="flex items-center transition-transform duration-300 hover:translate-x-1">
+                        <Users className="h-4 w-4 mr-2" />
+                        <span>{tour.groupSize.min}-{tour.groupSize.max} People</span>
+                      </div>
+                      <div className="flex items-center transition-transform duration-300 hover:translate-x-1">
+                        <MapPin className="h-4 w-4 mr-2" />
+                        <span>{tour.location}</span>
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <span className="text-2xl font-bold text-blue-600">₱{tour.price.toLocaleString()}</span>
+                      <span className="text-sm text-gray-500"> per person</span>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Link href={`/tours/${tour.id}`} className="w-full">
+                      <Button className="w-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105">Book Now</Button>
+                    </Link>
+                  </CardFooter>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </StaggerContainer>
 
-        <div className="text-center mt-12">
-          <Link href="/tours">
-            <Button size="lg" variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50">
-              View All Tours
-            </Button>
-          </Link>
-        </div>
+        <FadeIn delay={0.4}>
+          <div className="text-center mt-12">
+            <Link href="/tours">
+              <Button size="lg" variant="outline" className="text-blue-600 border-blue-600 hover:bg-blue-50 transition-all duration-300 hover:scale-105">
+                View All Tours
+              </Button>
+            </Link>
+          </div>
+        </FadeIn>
       </div>
     </section>
   );

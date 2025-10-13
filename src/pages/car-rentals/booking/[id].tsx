@@ -246,14 +246,14 @@ export default function CarRentalBookingPage() {
                           <h4 className="font-semibold mb-2">Features:</h4>
                           {vehicle.features.map((feature, idx) => (
                             <div key={idx} className="flex items-center text-sm">
-                              <Check className="h-4 w-4 mr-2 text-green-600" />
+                              <Check className="h-4 w-4 mr-2 text-blue-600" />
                               {feature}
                             </div>
                           ))}
                         </div>
 
                         {vehicle.withDriver && (
-                          <Badge className="mt-4 bg-green-600">Driver Available</Badge>
+                          <Badge className="mt-4 bg-blue-600">Driver Available</Badge>
                         )}
                       </div>
                     </div>
@@ -265,7 +265,7 @@ export default function CarRentalBookingPage() {
                 <Card className="sticky top-24">
                   <CardHeader>
                     <CardTitle>Book This Vehicle</CardTitle>
-                    <div className="text-3xl font-bold text-green-600">
+                    <div className="text-3xl font-bold text-blue-600">
                       ₱{vehicle.pricePerDay.toLocaleString()}
                       <span className="text-sm text-gray-500 font-normal ml-2">per day</span>
                     </div>
@@ -365,7 +365,36 @@ export default function CarRentalBookingPage() {
                       </div>
 
                       <div>
-                        <Label>Rental Period *</Label>
+                        <Label className="text-base font-semibold mb-2 block">Rental Period *</Label>
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                          <div className="flex items-start space-x-2">
+                            <CalendarIcon className="h-5 w-5 text-blue-600 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-blue-900">Select your rental dates</p>
+                              <p className="text-xs text-blue-700 mt-1">
+                                Choose a <strong>start date</strong> and <strong>end date</strong> for your rental period
+                              </p>
+                            </div>
+                          </div>
+                          {selectedDates?.from && selectedDates?.to && (
+                            <div className="mt-3 pt-3 border-t border-blue-200">
+                              <div className="flex items-center justify-between text-sm">
+                                <div>
+                                  <p className="text-blue-600 font-medium">Pickup</p>
+                                  <p className="text-blue-900">{selectedDates.from.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                </div>
+                                <Clock className="h-4 w-4 text-blue-400" />
+                                <div className="text-right">
+                                  <p className="text-blue-600 font-medium">Return</p>
+                                  <p className="text-blue-900">{selectedDates.to.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                </div>
+                              </div>
+                              <p className="text-center text-xs text-blue-600 font-semibold mt-2">
+                                {getRentalDays()} {getRentalDays() === 1 ? 'day' : 'days'} rental
+                              </p>
+                            </div>
+                          )}
+                        </div>
                         <Calendar
                           mode="range"
                           selected={selectedDates}
@@ -479,13 +508,13 @@ export default function CarRentalBookingPage() {
                         </div>
                         <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2">
                           <span>Total:</span>
-                          <span className="text-green-600">₱{calculateTotalPrice().toLocaleString()}</span>
+                          <span className="text-blue-600">₱{calculateTotalPrice().toLocaleString()}</span>
                         </div>
                       </div>
 
                       <Button 
                         type="submit" 
-                        className="w-full bg-green-600 hover:bg-green-700" 
+                        className="w-full bg-blue-600 hover:bg-blue-700" 
                         size="lg"
                         disabled={isBooking || authLoading}
                       >
