@@ -152,7 +152,7 @@ export default function CarRentalsPage() {
 
                 <div className="grid grid-cols-1 gap-6 mb-12">
                   {filteredVehicles.map((vehicle) => (
-                        <Card className="overflow-hidden hover:shadow-xl transition-shadow group">
+                        <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-shadow group">
                           <div className="flex flex-col md:flex-row">
                             <div className="md:w-1/3 h-64 md:h-auto relative">
                               <img
