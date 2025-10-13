@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
+import type { DateRange } from "react-day-picker";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export default function CarRentalBookingPage() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  const [selectedDates, setSelectedDates] = useState<{ from?: Date; to?: Date }>({});
+  const [selectedDates, setSelectedDates] = useState<DateRange | undefined>(undefined);
   const [bookingData, setBookingData] = useState({
     name: "",
     email: "",
@@ -80,7 +81,7 @@ export default function CarRentalBookingPage() {
   }
 
   const calculateTotalPrice = () => {
-    if (!selectedDates.from || !selectedDates.to) return 0;
+    if (!selectedDates?.from || !selectedDates?.to) return 0;
     
     const days = Math.ceil((selectedDates.to.getTime() - selectedDates.from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     let total = vehicle.pricePerDay * days;
@@ -93,7 +94,7 @@ export default function CarRentalBookingPage() {
   };
 
   const getRentalDays = () => {
-    if (!selectedDates.from || !selectedDates.to) return 0;
+    if (!selectedDates?.from || !selectedDates?.to) return 0;
     return Math.ceil((selectedDates.to.getTime() - selectedDates.from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
   };
 
@@ -110,7 +111,7 @@ export default function CarRentalBookingPage() {
       return;
     }
 
-    if (!selectedDates.from || !selectedDates.to) {
+    if (!selectedDates?.from || !selectedDates?.to) {
       toast({
         title: "Dates Required",
         description: "Please select pickup and dropoff dates.",
@@ -140,8 +141,8 @@ export default function CarRentalBookingPage() {
         userName: user.displayName || "",
         vehicleId: vehicle.id,
         bookingType: "vehicle",
-        startDate: selectedDates.from,
-        endDate: selectedDates.to,
+        startDate: selectedDates!.from!,
+        endDate: selectedDates!.to!,
         groupSize: 1, // Vehicle booking is typically for 1 group
         totalPrice: totalPrice,
         status: "pending",
@@ -163,7 +164,7 @@ export default function CarRentalBookingPage() {
       });
 
       // Reset form
-      setSelectedDates({});
+      setSelectedDates(undefined);
       setBookingData({
         name: user.displayName || "",
         email: user.email || "",
@@ -368,7 +369,7 @@ export default function CarRentalBookingPage() {
                         <Calendar
                           mode="range"
                           selected={selectedDates}
-                          onSelect={(range) => setSelectedDates(range || {})}
+                          onSelect={setSelectedDates}
                           disabled={(date) => date < new Date()}
                           className="rounded-md border"
                         />
@@ -451,25 +452,25 @@ export default function CarRentalBookingPage() {
                             <span>Base price:</span>
                             <span>₱{vehicle.pricePerDay.toLocaleString()}/day</span>
                           </div>
-                          {selectedDates.from && selectedDates.to && (
+                          {selectedDates?.from && selectedDates?.to && (
                             <div className="flex justify-between">
                               <span>Days:</span>
                               <span>{getRentalDays()} days</span>
                             </div>
                           )}
-                          {bookingData.addOns.insurance && selectedDates.from && selectedDates.to && (
+                          {bookingData.addOns.insurance && selectedDates?.from && selectedDates?.to && (
                             <div className="flex justify-between">
                               <span>Insurance:</span>
                               <span>₱{(500 * getRentalDays()).toLocaleString()}</span>
                             </div>
                           )}
-                          {bookingData.addOns.gps && selectedDates.from && selectedDates.to && (
+                          {bookingData.addOns.gps && selectedDates?.from && selectedDates?.to && (
                             <div className="flex justify-between">
                               <span>GPS:</span>
                               <span>₱{(200 * getRentalDays()).toLocaleString()}</span>
                             </div>
                           )}
-                          {bookingData.addOns.childSeat && selectedDates.from && selectedDates.to && (
+                          {bookingData.addOns.childSeat && selectedDates?.from && selectedDates?.to && (
                             <div className="flex justify-between">
                               <span>Child Seat:</span>
                               <span>₱{(150 * getRentalDays()).toLocaleString()}</span>
