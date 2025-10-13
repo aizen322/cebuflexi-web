@@ -38,6 +38,17 @@ export default function TourDetailPage() {
   });
   const [isBooking, setIsBooking] = useState(false);
 
+  // Update form data when user is authenticated
+  useEffect(() => {
+    if (user) {
+      setBookingData(prev => ({
+        ...prev,
+        name: user.displayName || "",
+        email: user.email || "",
+      }));
+    }
+  }, [user]);
+
   if (!tour) {
     return (
       <>
@@ -52,17 +63,6 @@ export default function TourDetailPage() {
       </>
     );
   }
-
-  // Update form data when user is authenticated
-  useEffect(() => {
-    if (user) {
-      setBookingData(prev => ({
-        ...prev,
-        name: user.displayName || "",
-        email: user.email || "",
-      }));
-    }
-  }, [user]);
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
