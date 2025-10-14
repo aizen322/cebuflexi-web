@@ -95,4 +95,30 @@
   .container {
     @apply mx-auto px-4 md:px-6 lg:px-8 max-w-7xl w-full;
   }
+  
+  /* Custom glassmorphism scrollbar */
+  .glassmorphism-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .glassmorphism-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  
+  .glassmorphism-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+    backdrop-filter: blur(10px);
+  }
+  
+  .glassmorphism-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  /* Firefox scrollbar */
+  .glassmorphism-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+  }
 }

@@ -294,6 +294,7 @@ export const vehicles: Vehicle[] = [
     luggage: 2,
     features: ["Air Conditioning", "Bluetooth Stereo", "GPS Navigation"],
     available: true,
+    stockCount: 10,
   },
   {
     id: "toyota-fortuner",
@@ -308,6 +309,7 @@ export const vehicles: Vehicle[] = [
     luggage: 4,
     features: ["Air Conditioning", "Leather Seats", "4x4 Capability", "Sunroof"],
     available: true,
+    stockCount: 5,
   },
   {
     id: "toyota-hiace",
@@ -322,6 +324,7 @@ export const vehicles: Vehicle[] = [
     luggage: 10,
     features: ["Dual Air Conditioning", "Spacious Interior", "Sliding Doors"],
     available: true,
+    stockCount: 3,
   },
 ];
 

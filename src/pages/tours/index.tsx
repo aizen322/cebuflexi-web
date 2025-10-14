@@ -12,23 +12,39 @@ export default function ToursPage() {
   const router = useRouter();
   const [filteredTours, setFilteredTours] = useState<Tour[]>(allTours);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   useEffect(() => {
-    const { category, date } = router.query;
+    const { category, date, search } = router.query;
     
-    if (category || date) {
-      const filters: any = {};
-      
-      if (category && typeof category === "string") {
-        filters.category = category;
-      }
-      
-      handleFilterChange(filters);
+    const filters: any = {};
+    
+    if (category && typeof category === "string") {
+      filters.category = category;
     }
+    
+    if (search && typeof search === "string") {
+      filters.search = search;
+      setSearchQuery(search);
+    } else {
+      // Clear search query if not in URL
+      setSearchQuery("");
+    }
+    
+    handleFilterChange(filters);
   }, [router.query]);
 
   const handleFilterChange = (filters: any) => {
     let filtered = [...allTours];
+
+    // Search filter (highest priority)
+    if (filters.search && filters.search.trim()) {
+      const searchTerm = filters.search.toLowerCase().trim();
+      filtered = filtered.filter(tour => 
+        tour.title.toLowerCase().includes(searchTerm) ||
+        tour.location.toLowerCase().includes(searchTerm)
+      );
+    }
 
     if (filters.category && filters.category !== "all") {
       filtered = filtered.filter(tour => tour.category === filters.category);
@@ -83,8 +99,17 @@ export default function ToursPage() {
               <div className="lg:w-3/4">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-semibold text-gray-900">
-                    {selectedCategory === "all" ? "All Tours" : `${selectedCategory} Tours`}
-                    <span className="text-gray-500 text-lg ml-2">({filteredTours.length})</span>
+                    {searchQuery && searchQuery.trim() ? (
+                      <>
+                        Search Results for "{searchQuery}"
+                        <span className="text-gray-500 text-lg ml-2">({filteredTours.length})</span>
+                      </>
+                    ) : (
+                      <>
+                        {selectedCategory === "all" ? "All Tours" : `${selectedCategory} Tours`}
+                        <span className="text-gray-500 text-lg ml-2">({filteredTours.length})</span>
+                      </>
+                    )}
                   </h2>
                 </div>
 

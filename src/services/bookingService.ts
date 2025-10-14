@@ -30,6 +30,9 @@ export interface Booking {
   customizations?: string;
   specialRequests?: string;
   contactPhone?: string;
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
   createdAt: Date;
   updatedAt?: Date;
 }
@@ -41,6 +44,7 @@ export const createBooking = async (bookingData: Omit<Booking, "id" | "createdAt
   const bookingsCollection = collection(db, "bookings");
   const docRef = await addDoc(bookingsCollection, {
     ...bookingData,
+    status: bookingData.status || "pending",
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
     startDate: Timestamp.fromDate(bookingData.startDate),
@@ -87,6 +91,37 @@ export const cancelBooking = async (bookingId: string) => {
 export const deleteBooking = async (bookingId: string) => {
   const bookingRef = doc(db, "bookings", bookingId);
   await deleteDoc(bookingRef);
+};
+
+export const checkUserPendingBookings = async (userId: string) => {
+  if (!db) {
+    throw new Error("Firestore database not initialized");
+  }
+  
+  const bookingsCollection = collection(db, "bookings");
+  const q = query(
+    bookingsCollection,
+    where("userId", "==", userId),
+    where("bookingType", "==", "tour"),
+    where("status", "in", ["pending", "confirmed"])
+  );
+  
+  const querySnapshot = await getDocs(q);
+  const bookings = querySnapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data(),
+    startDate: doc.data().startDate.toDate(),
+    endDate: doc.data().endDate.toDate(),
+    createdAt: doc.data().createdAt.toDate(),
+  })) as Booking[];
+  
+  return {
+    hasPending: bookings.some(b => b.status === "pending"),
+    hasConfirmed: bookings.some(b => b.status === "confirmed"),
+    pendingCount: bookings.filter(b => b.status === "pending").length,
+    confirmedCount: bookings.filter(b => b.status === "confirmed").length,
+    bookings: bookings
+  };
 };
 
 export const getAllBookings = async () => {

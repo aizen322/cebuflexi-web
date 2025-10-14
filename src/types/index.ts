@@ -38,6 +38,7 @@ export interface Vehicle {
   luggage: number;
   features: string[];
   available: boolean;
+  stockCount: number;
 }
 
 export interface Booking {

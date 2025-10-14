@@ -73,8 +73,13 @@ export function TourCard({ tour }: TourCardProps) {
       </CardContent>
 
       <CardFooter className="flex gap-2">
-        <Link href={`/tours/${tour.id}#book`} className="flex-1">
-          <Button className="w-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105">Book Now</Button>
+        <Link href={`/tours/${tour.id}`} className="flex-1">
+          <Button 
+            variant="outline" 
+            className="w-full bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 hover:scale-105"
+          >
+            View Details
+          </Button>
         </Link>
       </CardFooter>
     </Card>

@@ -16,8 +16,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Clock, Users, MapPin, Check, Calendar as CalendarIcon, Mail, Phone, User } from "lucide-react";
 import { allTours } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
-import { createBooking, Booking } from "@/services/bookingService";
+import { createBooking, Booking, checkUserPendingBookings } from "@/services/bookingService";
 import { useToast } from "@/hooks/use-toast";
+import { BookingValidationDialog } from "@/components/Tours/BookingValidationDialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export default function TourDetailPage() {
   const router = useRouter();
@@ -34,9 +36,15 @@ export default function TourDetailPage() {
     phone: "",
     groupSize: 2,
     specialRequests: "",
-    addOns: [] as string[]
+    addOns: [] as string[],
+    bookingType: "self" as "self" | "guest",
+    guestName: "",
+    guestEmail: "",
+    guestPhone: ""
   });
   const [isBooking, setIsBooking] = useState(false);
+  const [showValidationDialog, setShowValidationDialog] = useState(false);
+  const [validationData, setValidationData] = useState<any>(null);
 
   // Update form data when user is authenticated
   useEffect(() => {
@@ -95,6 +103,36 @@ export default function TourDetailPage() {
       return;
     }
 
+    if (bookingData.bookingType === "guest") {
+      if (!bookingData.guestName || !bookingData.guestEmail || !bookingData.guestPhone) {
+        toast({
+          title: "Guest Information Required",
+          description: "Please provide all guest details when booking for someone else.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Check for existing bookings first
+    try {
+      const existingBookings = await checkUserPendingBookings(user.uid);
+      if (existingBookings.hasPending || existingBookings.hasConfirmed) {
+        setValidationData(existingBookings);
+        setShowValidationDialog(true);
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking existing bookings:", error);
+      // Continue with booking if check fails
+    }
+
+    await proceedWithBooking();
+  };
+
+  const proceedWithBooking = async () => {
+    if (!user || !selectedDate) return;
+
     setIsBooking(true);
 
     try {
@@ -111,6 +149,11 @@ export default function TourDetailPage() {
         status: "pending",
         specialRequests: bookingData.specialRequests,
         contactPhone: bookingData.phone,
+        ...(bookingData.bookingType === "guest" && {
+          guestName: bookingData.guestName,
+          guestEmail: bookingData.guestEmail,
+          guestPhone: bookingData.guestPhone,
+        }),
       };
 
       const bookingId = await createBooking(booking);
@@ -127,7 +170,11 @@ export default function TourDetailPage() {
         phone: "",
         groupSize: 2,
         specialRequests: "",
-        addOns: []
+        addOns: [],
+        bookingType: "self",
+        guestName: "",
+        guestEmail: "",
+        guestPhone: ""
       });
       setSelectedDate(undefined);
 
@@ -273,7 +320,24 @@ export default function TourDetailPage() {
                     )}
                     <form onSubmit={handleBookingSubmit} className="space-y-4">
                       <div>
-                        <Label htmlFor="name">Full Name *</Label>
+                        <Label className="text-base font-semibold mb-3 block">Booking Type</Label>
+                        <RadioGroup 
+                          value={bookingData.bookingType} 
+                          onValueChange={(value: "self" | "guest") => setBookingData({...bookingData, bookingType: value})}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="self" id="self" />
+                            <Label htmlFor="self" className="cursor-pointer">Book for yourself</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="guest" id="guest" />
+                            <Label htmlFor="guest" className="cursor-pointer">Book for someone else</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="name">{bookingData.bookingType === "self" ? "Your Full Name" : "Your Name (Booker)"} *</Label>
                         <div className="relative">
                           <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                           <Input
@@ -292,7 +356,7 @@ export default function TourDetailPage() {
                       </div>
 
                       <div>
-                        <Label htmlFor="email">Email *</Label>
+                        <Label htmlFor="email">{bookingData.bookingType === "self" ? "Your Email" : "Your Email (Booker)"} *</Label>
                         <div className="relative">
                           <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                           <Input
@@ -311,8 +375,63 @@ export default function TourDetailPage() {
                         )}
                       </div>
 
+                      {bookingData.bookingType === "guest" && (
+                        <>
+                          <div className="border-t pt-4">
+                            <h4 className="font-semibold mb-3">Guest Information</h4>
+                          </div>
+                          
+                          <div>
+                            <Label htmlFor="guestName">Guest Full Name *</Label>
+                            <div className="relative">
+                              <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                              <Input
+                                id="guestName"
+                                required
+                                value={bookingData.guestName}
+                                onChange={(e) => setBookingData({...bookingData, guestName: e.target.value})}
+                                className="pl-10"
+                                placeholder="Guest Name"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="guestEmail">Guest Email *</Label>
+                            <div className="relative">
+                              <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                              <Input
+                                id="guestEmail"
+                                type="email"
+                                required
+                                value={bookingData.guestEmail}
+                                onChange={(e) => setBookingData({...bookingData, guestEmail: e.target.value})}
+                                className="pl-10"
+                                placeholder="guest@example.com"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label htmlFor="guestPhone">Guest Phone *</Label>
+                            <div className="relative">
+                              <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                              <Input
+                                id="guestPhone"
+                                type="tel"
+                                required
+                                value={bookingData.guestPhone}
+                                onChange={(e) => setBookingData({...bookingData, guestPhone: e.target.value})}
+                                className="pl-10"
+                                placeholder="+63 912 345 6789"
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
+
                       <div>
-                        <Label htmlFor="phone">Phone *</Label>
+                        <Label htmlFor="phone">{bookingData.bookingType === "self" ? "Your Phone" : "Your Phone (Booker)"} *</Label>
                         <div className="relative">
                           <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                           <Input
@@ -401,6 +520,20 @@ export default function TourDetailPage() {
       </main>
 
       <Footer />
+
+      <BookingValidationDialog
+        isOpen={showValidationDialog}
+        onClose={() => setShowValidationDialog(false)}
+        onProceed={() => {
+          setShowValidationDialog(false);
+          proceedWithBooking();
+        }}
+        hasPending={validationData?.hasPending || false}
+        hasConfirmed={validationData?.hasConfirmed || false}
+        pendingCount={validationData?.pendingCount || 0}
+        confirmedCount={validationData?.confirmedCount || 0}
+        bookings={validationData?.bookings || []}
+      />
     </>
   );
 }

@@ -1,26 +1,60 @@
 
 import { useState } from "react";
+import { useRouter } from "next/router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search } from "lucide-react";
 
 interface TourFiltersProps {
   onFilterChange: (filters: any) => void;
 }
 
 export function TourFilters({ onFilterChange }: TourFiltersProps) {
+  const router = useRouter();
   const [category, setCategory] = useState<string>("all");
   const [duration, setDuration] = useState<string>("");
   const [priceRange, setPriceRange] = useState<number[]>([0, 15000]);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Initialize search query from URL
+  useState(() => {
+    const { search } = router.query;
+    if (search && typeof search === "string") {
+      setSearchQuery(search);
+    }
+  });
 
   const applyFilters = () => {
     onFilterChange({
       category,
       duration,
-      priceRange
+      priceRange,
+      search: searchQuery
+    });
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    // Update URL with search query
+    const params = new URLSearchParams(router.query as Record<string, string>);
+    if (value.trim()) {
+      params.set('search', value);
+    } else {
+      params.delete('search');
+    }
+    router.push(`/tours?${params.toString()}`, undefined, { shallow: true });
+    
+    // Apply filters immediately when search changes
+    onFilterChange({
+      category,
+      duration,
+      priceRange,
+      search: value.trim() ? value : ""
     });
   };
 
@@ -28,11 +62,17 @@ export function TourFilters({ onFilterChange }: TourFiltersProps) {
     setCategory("all");
     setDuration("");
     setPriceRange([0, 15000]);
+    setSearchQuery("");
     onFilterChange({
       category: "all",
       duration: "",
-      priceRange: [0, 15000]
+      priceRange: [0, 15000],
+      search: ""
     });
+    // Clear search from URL
+    const params = new URLSearchParams(router.query as Record<string, string>);
+    params.delete('search');
+    router.push(`/tours?${params.toString()}`, undefined, { shallow: true });
   };
 
   return (
@@ -41,6 +81,20 @@ export function TourFilters({ onFilterChange }: TourFiltersProps) {
         <CardTitle>Filter Tours</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div>
+          <Label className="text-base font-semibold mb-3 block">Search Tours</Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search by title or location..."
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </div>
+
         <div>
           <Label className="text-base font-semibold mb-3 block">Tour Category</Label>
           <RadioGroup value={category} onValueChange={setCategory}>

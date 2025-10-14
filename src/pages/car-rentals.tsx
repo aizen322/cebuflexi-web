@@ -1,6 +1,6 @@
 
 import Head from "next/head";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Users, Fuel, Settings, Check, Car } from "lucide-react";
+import { Users, Fuel, Settings, Check, Car, Search } from "lucide-react";
 import { vehicles } from "@/lib/mockData";
 import { Vehicle } from "@/types";
 
@@ -22,17 +22,24 @@ export default function CarRentalsPage() {
     transmission: "all",
     fuelType: "all"
   });
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const [rentalCalculator, setRentalCalculator] = useState({
-    days: 1,
-    mileage: 100,
-    insurance: false,
-    gps: false,
-    childSeat: false
-  });
+  // Auto-apply filters when search query changes
+  useEffect(() => {
+    applyFilters();
+  }, [searchQuery]);
 
   const applyFilters = () => {
     let filtered = [...vehicles];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const searchTerm = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(v => 
+        v.name.toLowerCase().includes(searchTerm) ||
+        v.type.toLowerCase().includes(searchTerm)
+      );
+    }
 
     if (filters.withDriver !== "all") {
       const hasDriver = filters.withDriver === "with";
@@ -50,13 +57,16 @@ export default function CarRentalsPage() {
     setFilteredVehicles(filtered);
   };
 
-  const calculateTotal = (basePrice: number) => {
-    let total = basePrice * rentalCalculator.days;
-    if (rentalCalculator.insurance) total += 500 * rentalCalculator.days;
-    if (rentalCalculator.gps) total += 200 * rentalCalculator.days;
-    if (rentalCalculator.childSeat) total += 150 * rentalCalculator.days;
-    return total;
+  const resetFilters = () => {
+    setSearchQuery("");
+    setFilters({
+      withDriver: "all",
+      transmission: "all",
+      fuelType: "all"
+    });
+    setFilteredVehicles(vehicles);
   };
+
 
   return (
     <>
@@ -90,6 +100,20 @@ export default function CarRentalsPage() {
                     <CardTitle>Filter Vehicles</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">Search Vehicles</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                        <Input
+                          type="text"
+                          placeholder="Search by name or type..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <Label className="text-base font-semibold mb-3 block">Driver Option</Label>
                       <RadioGroup value={filters.withDriver} onValueChange={(val) => setFilters({...filters, withDriver: val})}>
@@ -137,9 +161,14 @@ export default function CarRentalsPage() {
                       </Select>
                     </div>
 
-                    <Button onClick={applyFilters} className="w-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105">
-                      Apply Filters
-                    </Button>
+                    <div className="space-y-2 pt-4">
+                      <Button onClick={applyFilters} className="w-full bg-blue-600 hover:bg-blue-700 transition-colors duration-300">
+                        Apply Filters
+                      </Button>
+                      <Button onClick={resetFilters} variant="outline" className="w-full">
+                        Reset Filters
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </aside>
@@ -163,6 +192,9 @@ export default function CarRentalsPage() {
                               {vehicle.withDriver && (
                                 <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">With Driver Available</Badge>
                               )}
+                              <Badge className="absolute top-4 right-4 bg-green-600 text-white transition-transform duration-300 group-hover:scale-110">
+                                {vehicle.stockCount} Available
+                              </Badge>
                             </div>
 
                             <div className="md:w-2/3 p-6 flex flex-col justify-between">
@@ -209,14 +241,8 @@ export default function CarRentalsPage() {
 
                               <div className="flex gap-3">
                                 <Button 
-                                  className="flex-1 bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105"
-                                  onClick={() => window.location.href = `/car-rentals/booking/${vehicle.id}`}
-                                >
-                                  Book Now
-                                </Button>
-                                <Button 
                                   variant="outline" 
-                                  className="flex-1 transition-all duration-300 hover:scale-105"
+                                  className="flex-1 bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 hover:scale-105"
                                   onClick={() => window.location.href = `/car-rentals/booking/${vehicle.id}`}
                                 >
                                   View Details
@@ -228,82 +254,6 @@ export default function CarRentalsPage() {
                   ))}
                 </div>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Rental Price Calculator</CardTitle>
-                      <CardDescription>Estimate your total rental cost with add-ons</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="days">Number of Days</Label>
-                          <Input
-                            id="days"
-                            type="number"
-                            min="1"
-                            value={rentalCalculator.days}
-                            onChange={(e) => setRentalCalculator({...rentalCalculator, days: Number(e.target.value)})}
-                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="mileage">Estimated Mileage (km/day)</Label>
-                          <Input
-                            id="mileage"
-                            type="number"
-                            min="50"
-                            value={rentalCalculator.mileage}
-                            onChange={(e) => setRentalCalculator({...rentalCalculator, mileage: Number(e.target.value)})}
-                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <h4 className="font-semibold">Add-ons</h4>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="insurance"
-                            checked={rentalCalculator.insurance}
-                            onCheckedChange={(checked) => setRentalCalculator({...rentalCalculator, insurance: checked as boolean})}
-                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                          />
-                          <Label htmlFor="insurance" className="cursor-pointer">
-                            Full Insurance Coverage (+₱500/day)
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="gps"
-                            checked={rentalCalculator.gps}
-                            onCheckedChange={(checked) => setRentalCalculator({...rentalCalculator, gps: checked as boolean})}
-                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                          />
-                          <Label htmlFor="gps" className="cursor-pointer">
-                            GPS Navigation (+₱200/day)
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="childSeat"
-                            checked={rentalCalculator.childSeat}
-                            onCheckedChange={(checked) => setRentalCalculator({...rentalCalculator, childSeat: checked as boolean})}
-                            className="transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                          />
-                          <Label htmlFor="childSeat" className="cursor-pointer">
-                            Child Safety Seat (+₱150/day)
-                          </Label>
-                        </div>
-                      </div>
-
-                      <div className="border-t pt-4">
-                        <p className="text-sm text-gray-600 mb-2">Example: Toyota Fortuner at ₱3,500/day</p>
-                        <div className="text-2xl font-bold text-blue-600">
-                          Total Estimate: ₱{calculateTotal(3500).toLocaleString()}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
               </div>
             </div>
           </div>

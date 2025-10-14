@@ -1,23 +1,73 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Search, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
+import { featuredTours } from "@/lib/mockData";
 
 export function HeroSection() {
   const router = useRouter();
-  const [tourType, setTourType] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+  const [filteredSuggestions, setFilteredSuggestions] = useState(featuredTours);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Filter suggestions based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredSuggestions(featuredTours);
+    } else {
+      const filtered = featuredTours.filter(tour => 
+        tour.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tour.location.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredSuggestions(filtered);
+    }
+  }, [searchQuery]);
+
+  // Set focus on search input when component mounts
+  useEffect(() => {
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, []);
+
+  // Handle clicking outside to close suggestions
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchInputRef.current && 
+        suggestionsRef.current &&
+        !searchInputRef.current.contains(event.target as Node) &&
+        !suggestionsRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSearch = () => {
-    const params = new URLSearchParams();
-    
-    if (tourType) {
-      params.append("category", tourType);
+    if (searchQuery.trim()) {
+      router.push(`/tours?search=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      router.push('/tours');
     }
+  };
 
-    const queryString = params.toString();
-    router.push(`/tours${queryString ? `?${queryString}` : ""}`);
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
   };
 
   return (
@@ -53,40 +103,62 @@ export function HeroSection() {
         </motion.p>
 
         <motion.div 
-          className="bg-white rounded-lg shadow-2xl p-6 max-w-4xl mx-auto"
+          className="bg-white/10 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-4xl mx-auto"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <Select value={tourType} onValueChange={setTourType}>
-              <SelectTrigger className="transition-all duration-200 hover:border-blue-400">
-                <SelectValue placeholder="Tour Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Beach">Beach Tours</SelectItem>
-                <SelectItem value="Adventure">Adventure Tours</SelectItem>
-                <SelectItem value="Cultural">Cultural Tours</SelectItem>
-                <SelectItem value="Food">Food Tours</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="relative">
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/70" />
+                  <Input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search for tours, locations..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setShowSuggestions(true)}
+                    onKeyPress={handleKeyPress}
+                    className="bg-white/10 border-0 text-white placeholder:text-white/70 pl-10 h-12 text-lg focus:bg-white/20 focus:border-0 focus:ring-0 transition-all duration-200"
+                  />
+                </div>
+                
+                {/* Suggestions Dropdown */}
+                {showSuggestions && filteredSuggestions.length > 0 && (
+                  <div
+                    ref={suggestionsRef}
+                    className="absolute top-full left-0 right-0 mt-2 bg-white/20 backdrop-blur-md rounded-lg shadow-xl z-50 overflow-y-auto glassmorphism-scrollbar"
+                    style={{
+                      maxHeight: '140px' // Reduced to show ~2 suggestions (60px each)
+                    }}
+                  >
+                    {filteredSuggestions.slice(0, 5).map((tour) => (
+                      <button
+                        key={tour.id}
+                        onClick={() => handleSuggestionClick(tour.title)}
+                        className="w-full text-left px-4 py-3 hover:bg-white/20 transition-colors duration-200 border-b border-white/10 last:border-b-0"
+                      >
+                        <div className="text-white font-medium">{tour.title}</div>
+                        <div className="text-white/70 text-sm flex items-center mt-1">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          {tour.location}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-            <Button 
-              className="bg-blue-600 hover:bg-blue-700 w-full transition-all duration-300 hover:scale-105"
-              onClick={handleSearch}
-            >
-              <Search className="mr-2 h-4 w-4" />
-              Search Tours
-            </Button>
+              <Button 
+                className="bg-blue-600/90 hover:bg-blue-700/90 backdrop-blur-sm text-white px-8 h-12 transition-all duration-300 hover:scale-105"
+                onClick={handleSearch}
+              >
+                Search Tours
+              </Button>
+            </div>
           </div>
-
-          <Button 
-            size="lg" 
-            className="bg-green-600 hover:bg-green-700 text-lg px-8 py-6 w-full md:w-auto transition-all duration-300 hover:scale-105"
-            onClick={handleSearch}
-          >
-            Book Your Cebu Adventure
-          </Button>
         </motion.div>
       </div>
 

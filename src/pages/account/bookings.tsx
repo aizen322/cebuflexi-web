@@ -19,7 +19,8 @@ import {
   Map,
   X,
   Filter,
-  Loader2
+  Loader2,
+  User
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUserBookings, cancelBooking, Booking } from "@/services/bookingService";
@@ -262,6 +263,32 @@ export default function UserBookingsPage() {
                                 </div>
                               )}
 
+                              {(booking.guestName || booking.guestEmail || booking.guestPhone) && (
+                                <div className="mb-4">
+                                  <h4 className="font-semibold text-sm mb-1">Guest Information:</h4>
+                                  <div className="text-sm text-gray-600 space-y-1">
+                                    {booking.guestName && (
+                                      <div className="flex items-center">
+                                        <User className="h-4 w-4 mr-2 text-blue-600" />
+                                        <span>Name: {booking.guestName}</span>
+                                      </div>
+                                    )}
+                                    {booking.guestEmail && (
+                                      <div className="flex items-center">
+                                        <Mail className="h-4 w-4 mr-2 text-blue-600" />
+                                        <span>Email: {booking.guestEmail}</span>
+                                      </div>
+                                    )}
+                                    {booking.guestPhone && (
+                                      <div className="flex items-center">
+                                        <Phone className="h-4 w-4 mr-2 text-blue-600" />
+                                        <span>Phone: {booking.guestPhone}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
                               {booking.customizations && booking.bookingType === "vehicle" && (
                                 <div className="mb-4">
                                   <h4 className="font-semibold text-sm mb-1">Rental Details:</h4>
@@ -269,8 +296,11 @@ export default function UserBookingsPage() {
                                     {(() => {
                                       try {
                                         const customizations = JSON.parse(booking.customizations);
+                                        const rentalDays = customizations.rentalDays || 1;
+                                        const addOns = customizations.addOns || {};
+                                        
                                         return (
-                                          <div>
+                                          <div className="space-y-2">
                                             {customizations.pickupLocation && (
                                               <div>Pickup: {customizations.pickupLocation}</div>
                                             )}
@@ -279,6 +309,32 @@ export default function UserBookingsPage() {
                                             )}
                                             {customizations.rentalDays && (
                                               <div>Duration: {customizations.rentalDays} days</div>
+                                            )}
+                                            
+                                            {(addOns.insurance || addOns.gps || addOns.childSeat) && (
+                                              <div className="mt-3 pt-2 border-t border-gray-200">
+                                                <h5 className="font-medium text-sm mb-1">Add-ons:</h5>
+                                                <div className="space-y-1">
+                                                  {addOns.insurance && (
+                                                    <div className="flex justify-between">
+                                                      <span>Insurance:</span>
+                                                      <span>₱{(500 * rentalDays).toLocaleString()}</span>
+                                                    </div>
+                                                  )}
+                                                  {addOns.gps && (
+                                                    <div className="flex justify-between">
+                                                      <span>GPS Navigation:</span>
+                                                      <span>₱{(200 * rentalDays).toLocaleString()}</span>
+                                                    </div>
+                                                  )}
+                                                  {addOns.childSeat && (
+                                                    <div className="flex justify-between">
+                                                      <span>Child Safety Seat:</span>
+                                                      <span>₱{(150 * rentalDays).toLocaleString()}</span>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
                                             )}
                                           </div>
                                         );

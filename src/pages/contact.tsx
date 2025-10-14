@@ -12,8 +12,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { MapPin, Phone, Mail, Clock, Send } from "lucide-react";
 import { motion } from "framer-motion";
 import { FadeIn } from "@/components/Animation/FadeIn";
+import { createContactSubmission } from "@/services/contactService";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ContactPage() {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,13 +26,38 @@ export default function ContactPage() {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Contact form submitted:", formData);
-    alert("Thank you for contacting us! We'll get back to you within 24 hours.");
-    setSubmitted(true);
-    setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+    setIsSubmitting(true);
+    
+    try {
+      await createContactSubmission({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        subject: formData.subject,
+        message: formData.message,
+      });
+      
+      toast({
+        title: "Message Sent!",
+        description: "Thank you for contacting us! We'll get back to you within 24 hours.",
+      });
+      
+      setSubmitted(true);
+      setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
+    } catch (error) {
+      console.error("Contact form error:", error);
+      toast({
+        title: "Error",
+        description: "There was an error sending your message. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const faqs = [
@@ -174,9 +202,14 @@ export default function ContactPage() {
                           />
                         </div>
 
-                        <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105" size="lg">
+                        <Button 
+                          type="submit" 
+                          className="w-full bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:scale-105" 
+                          size="lg"
+                          disabled={isSubmitting}
+                        >
                           <Send className="h-4 w-4 mr-2" />
-                          Send Message
+                          {isSubmitting ? "Sending..." : "Send Message"}
                         </Button>
                       </form>
                     </CardContent>
