@@ -25,7 +25,7 @@ export default function HomePage() {
 
       <Header />
       
-      <main>
+      <main className="overflow-x-hidden">
         <HeroSection />
         <FeaturedTours />
         <WhyChooseUs />
