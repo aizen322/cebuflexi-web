@@ -27,12 +27,6 @@ export function HeroSection() {
     }
   }, [searchQuery]);
 
-  // Set focus on search input when component mounts
-  useEffect(() => {
-    if (searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, []);
 
   // Handle clicking outside to close suggestions
   useEffect(() => {
@@ -73,7 +67,7 @@ export function HeroSection() {
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
       <motion.div
-        className="absolute inset-0 bg-center md:bg-fixed bg-cover"
+        className="absolute inset-0 bg-center bg-cover"
         style={{
           backgroundImage: "url('https://images.unsplash.com/photo-1559827260-dc66d52bef19?w=1920&h=1080&fit=crop')",
           backgroundPosition: "center center",
