@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Clock, Users, MapPin, Check, Calendar as CalendarIcon, Mail, Phone, User } from "lucide-react";
+import { Clock, Users, MapPin, Check, Calendar as CalendarIcon, Mail, Phone, User, ArrowLeft } from "lucide-react";
 import { allTours } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBooking, Booking, checkUserPendingBookings } from "@/services/bookingService";
@@ -204,6 +204,15 @@ export default function TourDetailPage() {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push("/tours")}
+                  className="mb-4"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Tours
+                </Button>
+                
                 <div className="mb-6">
                   <div className="relative h-96 rounded-lg overflow-hidden mb-4">
                     <img
@@ -452,7 +461,7 @@ export default function TourDetailPage() {
                           min={tour.groupSize.min}
                           max={tour.groupSize.max}
                           required
-                          value={bookingData.groupSize}
+                          value={tour.groupSize.min}
                           onChange={(e) => setBookingData({...bookingData, groupSize: Number(e.target.value)})}
                         />
                         <p className="text-xs text-gray-500 mt-1">

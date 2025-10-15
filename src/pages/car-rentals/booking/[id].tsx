@@ -24,7 +24,8 @@ import {
   Phone, 
   User,
   Clock,
-  MapPin
+  MapPin,
+  ArrowLeft
 } from "lucide-react";
 import { vehicles } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
@@ -204,6 +205,15 @@ export default function CarRentalBookingPage() {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => router.push("/car-rentals")}
+                  className="mb-4"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Vehicles
+                </Button>
+                
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-2xl">Vehicle Details</CardTitle>
