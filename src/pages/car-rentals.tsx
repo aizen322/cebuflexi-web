@@ -1,6 +1,7 @@
 
 import Head from "next/head";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { vehicles } from "@/lib/mockData";
 import { Vehicle } from "@/types";
 
 export default function CarRentalsPage() {
+  const router = useRouter();
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>(vehicles);
   const [filters, setFilters] = useState({
     withDriver: "all",
@@ -252,7 +254,7 @@ export default function CarRentalsPage() {
                                 <Button 
                                   variant="outline" 
                                   className="flex-1 bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 hover:scale-105"
-                                  onClick={() => window.location.href = `/car-rentals/booking/${vehicle.id}`}
+                                  onClick={() => router.push(`/car-rentals/booking/${vehicle.id}`)}
                                 >
                                   View Details
                                 </Button>

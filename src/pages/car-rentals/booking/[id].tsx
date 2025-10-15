@@ -35,7 +35,6 @@ import { useToast } from "@/hooks/use-toast";
 export default function CarRentalBookingPage() {
   const router = useRouter();
   const { id } = router.query;
-  const vehicle = vehicles.find(v => v.id === id);
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
@@ -55,6 +54,9 @@ export default function CarRentalBookingPage() {
   });
   const [isBooking, setIsBooking] = useState(false);
 
+  // Find vehicle only after router query is loaded
+  const vehicle = router.isReady && id ? vehicles.find(v => v.id === id) : null;
+
   // Update form data when user is authenticated
   useEffect(() => {
     if (user) {
@@ -65,6 +67,22 @@ export default function CarRentalBookingPage() {
       }));
     }
   }, [user]);
+
+  // Show loading state while router is loading
+  if (!router.isReady) {
+    return (
+      <>
+        <Header />
+        <div className="pt-20 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Loading vehicle details...</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   if (!vehicle) {
     return (

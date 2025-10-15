@@ -24,7 +24,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 export default function TourDetailPage() {
   const router = useRouter();
   const { id } = router.query;
-  const tour = allTours.find(t => t.id === id);
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
@@ -46,6 +45,9 @@ export default function TourDetailPage() {
   const [showValidationDialog, setShowValidationDialog] = useState(false);
   const [validationData, setValidationData] = useState<any>(null);
 
+  // Find tour only after router query is loaded
+  const tour = router.isReady && id ? allTours.find(t => t.id === id) : null;
+
   // Update form data when user is authenticated
   useEffect(() => {
     if (user) {
@@ -56,6 +58,22 @@ export default function TourDetailPage() {
       }));
     }
   }, [user]);
+
+  // Show loading state while router is loading
+  if (!router.isReady) {
+    return (
+      <>
+        <Header />
+        <div className="pt-20 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Loading tour details...</p>
+          </div>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   if (!tour) {
     return (
