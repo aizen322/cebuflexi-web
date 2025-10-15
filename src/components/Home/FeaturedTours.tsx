@@ -37,7 +37,7 @@ export function FeaturedTours() {
                     <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">{tour.category}</Badge>
                   </div>
                   <CardHeader>
-                    <CardTitle className="text-xl group-hover:text-blue-600 transition-colors duration-300">{tour.title}</CardTitle>
+                    <CardTitle className="text-xl group-hover:text-blue-600 transition-colors duration-300 min-h-[56px] line-clamp-2">{tour.title}</CardTitle>
                     <CardDescription className="min-h-[48px]">{tour.shortDescription}</CardDescription>
                   </CardHeader>
                   <CardContent>

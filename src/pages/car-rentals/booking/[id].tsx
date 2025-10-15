@@ -158,10 +158,8 @@ export default function CarRentalBookingPage() {
 
       const bookingId = await createBooking(booking);
       
-      toast({
-        title: "Booking Confirmed!",
-        description: `Your vehicle rental has been submitted. Booking ID: ${bookingId}`,
-      });
+      // Redirect to confirmation page instead of showing toast
+      router.push(`/booking-confirmation/${bookingId}`);
 
       // Reset form
       setSelectedDates(undefined);

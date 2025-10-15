@@ -5,6 +5,7 @@ import {
   addDoc,
   getDocs,
   doc,
+  getDoc,
   updateDoc,
   deleteDoc,
   query,
@@ -51,6 +52,27 @@ export const createBooking = async (bookingData: Omit<Booking, "id" | "createdAt
     endDate: Timestamp.fromDate(bookingData.endDate),
   });
   return docRef.id;
+};
+
+export const getBookingById = async (bookingId: string) => {
+  if (!db) {
+    throw new Error("Firestore database not initialized");
+  }
+  const bookingRef = doc(db, "bookings", bookingId);
+  const bookingDoc = await getDoc(bookingRef);
+  
+  if (!bookingDoc.exists()) {
+    return null;
+  }
+  
+  const data = bookingDoc.data();
+  return {
+    id: bookingDoc.id,
+    ...data,
+    startDate: data.startDate.toDate(),
+    endDate: data.endDate.toDate(),
+    createdAt: data.createdAt.toDate(),
+  } as Booking;
 };
 
 export const getUserBookings = async (userId: string) => {

@@ -175,8 +175,17 @@ export default function CarRentalsPage() {
 
               <div className="lg:w-3/4">
                 <div className="mb-8">
-                  <h2 className="text-2xl font-semibold mb-2">Available Vehicles</h2>
-                  <p className="text-gray-600">Choose from {filteredVehicles.length} vehicles</p>
+                  {searchQuery.trim() ? (
+                    <>
+                      <h2 className="text-2xl font-semibold mb-2">Search Results for "{searchQuery}"</h2>
+                      <p className="text-gray-600">{filteredVehicles.length} vehicles found</p>
+                    </>
+                  ) : (
+                    <>
+                      <h2 className="text-2xl font-semibold mb-2">All Vehicles ({vehicles.length})</h2>
+                      <p className="text-gray-600">Choose from our complete fleet</p>
+                    </>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 mb-12">

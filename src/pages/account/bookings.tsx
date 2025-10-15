@@ -338,7 +338,7 @@ export default function UserBookingsPage() {
                                             )}
                                           </div>
                                         );
-                                      } catch {
+                                      } catch (error) {
                                         return <div>{booking.customizations}</div>;
                                       }
                                     })()}
