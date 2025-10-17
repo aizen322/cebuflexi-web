@@ -24,6 +24,11 @@ export default function CarRentalsPage() {
     transmission: "all",
     fuelType: "all"
   });
+  const [appliedFilters, setAppliedFilters] = useState({
+    withDriver: "all",
+    transmission: "all",
+    fuelType: "all"
+  });
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Auto-apply filters when search query changes
@@ -57,11 +62,17 @@ export default function CarRentalsPage() {
     }
 
     setFilteredVehicles(filtered);
+    setAppliedFilters({...filters});
   };
 
   const resetFilters = () => {
     setSearchQuery("");
     setFilters({
+      withDriver: "all",
+      transmission: "all",
+      fuelType: "all"
+    });
+    setAppliedFilters({
       withDriver: "all",
       transmission: "all",
       fuelType: "all"
@@ -177,17 +188,20 @@ export default function CarRentalsPage() {
 
               <div className="lg:w-3/4">
                 <div className="mb-8">
-                  {searchQuery.trim() ? (
-                    <>
-                      <h2 className="text-2xl font-semibold mb-2">Search Results for "{searchQuery}"</h2>
-                      <p className="text-gray-600">{filteredVehicles.length} vehicles found</p>
-                    </>
-                  ) : (
-                    <>
-                      <h2 className="text-2xl font-semibold mb-2">All Vehicles ({vehicles.length})</h2>
-                      <p className="text-gray-600">Choose from our complete fleet</p>
-                    </>
-                  )}
+                  <h2 className="text-2xl font-semibold text-gray-900">
+                    {searchQuery.trim() ? (
+                      <>
+                        Search Results for "{searchQuery}"
+                        <span className="text-gray-500 text-lg ml-2">({filteredVehicles.length})</span>
+                      </>
+                    ) : (
+                      <>
+                        {appliedFilters.withDriver === "with" ? "With Driver" : 
+                         appliedFilters.withDriver === "without" ? "Self-Drive" : "All Vehicles"}
+                        <span className="text-gray-500 text-lg ml-2">({filteredVehicles.length})</span>
+                      </>
+                    )}
+                  </h2>
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 mb-12">
