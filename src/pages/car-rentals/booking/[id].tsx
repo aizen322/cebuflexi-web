@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -21,7 +20,6 @@ import {
   Check, 
   Calendar as CalendarIcon, 
   Mail, 
-  Phone, 
   User,
   Clock,
   MapPin,
@@ -31,6 +29,7 @@ import { vehicles } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBooking, Booking } from "@/services/bookingService";
 import { useToast } from "@/hooks/use-toast";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 export default function CarRentalBookingPage() {
   const router = useRouter();
@@ -43,6 +42,7 @@ export default function CarRentalBookingPage() {
     name: "",
     email: "",
     phone: "",
+    phoneCountryCode: "PH",
     pickupLocation: "",
     dropoffLocation: "",
     specialRequests: "",
@@ -167,6 +167,7 @@ export default function CarRentalBookingPage() {
         status: "pending",
         specialRequests: bookingData.specialRequests,
         contactPhone: bookingData.phone,
+        phoneCountryCode: bookingData.phoneCountryCode,
         customizations: JSON.stringify({
           pickupLocation: bookingData.pickupLocation,
           dropoffLocation: bookingData.dropoffLocation,
@@ -186,6 +187,7 @@ export default function CarRentalBookingPage() {
         name: user.displayName || "",
         email: user.email || "",
         phone: "",
+        phoneCountryCode: "PH",
         pickupLocation: "",
         dropoffLocation: "",
         specialRequests: "",
@@ -347,18 +349,18 @@ export default function CarRentalBookingPage() {
 
                       <div>
                         <Label htmlFor="phone">Phone Number *</Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            id="phone"
-                            type="tel"
-                            required
-                            value={bookingData.phone}
-                            onChange={(e) => setBookingData({...bookingData, phone: e.target.value})}
-                            className="pl-10"
-                            placeholder="+63 912 345 6789"
-                          />
-                        </div>
+                        <PhoneInput
+                          id="phone"
+                          value={bookingData.phone}
+                          onChange={(phone, countryCode) => setBookingData({
+                            ...bookingData, 
+                            phone: phone,
+                            phoneCountryCode: countryCode
+                          })}
+                          countryCode={bookingData.phoneCountryCode}
+                          required
+                          placeholder="Enter your phone number"
+                        />
                       </div>
 
                       <div>

@@ -31,9 +31,11 @@ export interface Booking {
   customizations?: string;
   specialRequests?: string;
   contactPhone?: string;
+  phoneCountryCode?: string;
   guestName?: string;
   guestEmail?: string;
   guestPhone?: string;
+  guestPhoneCountryCode?: string;
   createdAt: Date;
   updatedAt?: Date;
 }

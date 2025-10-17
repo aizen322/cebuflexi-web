@@ -23,7 +23,7 @@ const nextConfig = {
   },
   // Remove exposed dev configuration
   ...(process.env.NODE_ENV === 'development' && {
-    allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS?.split(',') || ["*.daytona.work", "*.softgen.dev"],
+    allowedDevOrigins: process.env.ALLOWED_DEV_ORIGINS?.split(',') || [],
   }),
   // Security headers
   async headers() {

@@ -19,7 +19,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   let overallStatus: 'pass' | 'fail' | 'warning' = 'pass';
 
   // Set security headers in the response for testing
-  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.softgen.ai; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://images.unsplash.com https://firebasestorage.googleapis.com https://storage.googleapis.com; font-src 'self'; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://securetoken.googleapis.com https://firestore.googleapis.com https://cdn.softgen.ai;");
+  res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://images.unsplash.com https://firebasestorage.googleapis.com https://storage.googleapis.com; font-src 'self'; connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://securetoken.googleapis.com https://firestore.googleapis.com;");
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-XSS-Protection', '1; mode=block');

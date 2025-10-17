@@ -12,14 +12,14 @@ import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Clock, Users, MapPin, Check, Calendar as CalendarIcon, Mail, Phone, User, ArrowLeft } from "lucide-react";
+import { Clock, Users, MapPin, Check, Mail, User, ArrowLeft } from "lucide-react";
 import { allTours } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBooking, Booking, checkUserPendingBookings } from "@/services/bookingService";
 import { useToast } from "@/hooks/use-toast";
 import { BookingValidationDialog } from "@/components/Tours/BookingValidationDialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 export default function TourDetailPage() {
   const router = useRouter();
@@ -33,13 +33,15 @@ export default function TourDetailPage() {
     name: "",
     email: "",
     phone: "",
+    phoneCountryCode: "PH",
     groupSize: 1, // Will be updated when tour loads
     specialRequests: "",
     addOns: [] as string[],
     bookingType: "self" as "self" | "guest",
     guestName: "",
     guestEmail: "",
-    guestPhone: ""
+    guestPhone: "",
+    guestPhoneCountryCode: "PH"
   });
   const [isBooking, setIsBooking] = useState(false);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
@@ -100,6 +102,7 @@ export default function TourDetailPage() {
     );
   }
 
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -127,16 +130,25 @@ export default function TourDetailPage() {
       const { tourBookingSchema, validateForm } = await import('@/lib/validation');
       const { sanitizeUserInput } = await import('@/lib/security');
       
-      // Validate booking data
-      const validation = validateForm(tourBookingSchema, {
+      // Prepare data for validation
+      const formattedBookingData = {
         ...bookingData,
         groupSize: Number(bookingData.groupSize),
-      });
+      };
+      
+      // Validate booking data
+      const validation = validateForm(tourBookingSchema, formattedBookingData);
       
       if (!validation.success) {
+        // Show specific validation errors
+        const errorMessages = Object.entries(validation.errors || {}).map(([field, message]) => {
+          const fieldName = field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1');
+          return `${fieldName}: ${message}`;
+        });
+        
         toast({
           title: "Validation Error",
-          description: "Please check your input and try again.",
+          description: errorMessages.join(". "),
           variant: "destructive",
         });
         return;
@@ -174,7 +186,7 @@ export default function TourDetailPage() {
       console.error("Error validating booking:", error);
       toast({
         title: "Validation Error",
-        description: "Please check your input and try again.",
+        description: error instanceof Error ? error.message : "Please check your input and try again.",
         variant: "destructive",
       });
       return;
@@ -200,10 +212,12 @@ export default function TourDetailPage() {
         status: "pending",
         specialRequests: bookingData.specialRequests,
         contactPhone: bookingData.phone,
+        phoneCountryCode: bookingData.phoneCountryCode,
         ...(bookingData.bookingType === "guest" && {
           guestName: bookingData.guestName,
           guestEmail: bookingData.guestEmail,
           guestPhone: bookingData.guestPhone,
+          guestPhoneCountryCode: bookingData.guestPhoneCountryCode,
         }),
       };
 
@@ -217,13 +231,15 @@ export default function TourDetailPage() {
         name: user.displayName || "",
         email: user.email || "",
         phone: "",
+        phoneCountryCode: "PH",
         groupSize: tour.groupSize.min,
         specialRequests: "",
         addOns: [],
         bookingType: "self",
         guestName: "",
         guestEmail: "",
-        guestPhone: ""
+        guestPhone: "",
+        guestPhoneCountryCode: "PH"
       });
       setSelectedDate(undefined);
 
@@ -473,36 +489,36 @@ export default function TourDetailPage() {
 
                           <div>
                             <Label htmlFor="guestPhone">Guest Phone *</Label>
-                            <div className="relative">
-                              <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                              <Input
-                                id="guestPhone"
-                                type="tel"
-                                required
-                                value={bookingData.guestPhone}
-                                onChange={(e) => setBookingData({...bookingData, guestPhone: e.target.value})}
-                                className="pl-10"
-                                placeholder="+63 912 345 6789"
-                              />
-                            </div>
+                            <PhoneInput
+                              id="guestPhone"
+                              value={bookingData.guestPhone}
+                              onChange={(phone, countryCode) => setBookingData({
+                                ...bookingData, 
+                                guestPhone: phone,
+                                guestPhoneCountryCode: countryCode
+                              })}
+                              countryCode={bookingData.guestPhoneCountryCode}
+                              required
+                              placeholder="Enter guest phone number"
+                            />
                           </div>
                         </>
                       )}
 
                       <div>
                         <Label htmlFor="phone">{bookingData.bookingType === "self" ? "Your Phone" : "Your Phone (Booker)"} *</Label>
-                        <div className="relative">
-                          <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input
-                            id="phone"
-                            type="tel"
-                            required
-                            value={bookingData.phone}
-                            onChange={(e) => setBookingData({...bookingData, phone: e.target.value})}
-                            className="pl-10"
-                            placeholder="+63 912 345 6789"
-                          />
-                        </div>
+                        <PhoneInput
+                          id="phone"
+                          value={bookingData.phone}
+                          onChange={(phone, countryCode) => setBookingData({
+                            ...bookingData, 
+                            phone: phone,
+                            phoneCountryCode: countryCode
+                          })}
+                          countryCode={bookingData.phoneCountryCode}
+                          required
+                          placeholder="Enter your phone number"
+                        />
                       </div>
 
                       <div>

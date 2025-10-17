@@ -7,7 +7,8 @@ export const emailSchema = z.string()
   .max(254, 'Email is too long');
 
 export const phoneSchema = z.string()
-  .regex(/^(\+63|0)?[0-9]{10}$/, 'Please enter a valid Philippine phone number')
+  .min(1, 'Phone number is required')
+  .regex(/^\+\d{1,4}\d{7,15}$/, 'Please enter a valid international phone number (e.g., +639123456789)')
   .optional()
   .or(z.literal(''));
 
@@ -43,9 +44,7 @@ export const contactFormSchema = z.object({
 export const tourBookingSchema = z.object({
   name: nameSchema,
   email: emailSchema,
-  phone: z.string()
-    .min(1, 'Phone number is required')
-    .regex(/^(\+63|0)?[0-9]{10}$/, 'Please enter a valid Philippine phone number'),
+  phone: phoneSchema,
   groupSize: z.number()
     .int('Group size must be a whole number')
     .min(1, 'Group size must be at least 1')
@@ -62,23 +61,34 @@ export const tourBookingSchema = z.object({
     required_error: 'Please select a booking type',
   }),
   guestName: z.string().optional(),
-  guestEmail: emailSchema.optional(),
+  guestEmail: z.string().optional(),
   guestPhone: z.string().optional(),
 }).refine(
   (data) => {
     if (data.bookingType === 'guest') {
-      return data.guestName && data.guestEmail && data.guestPhone;
+      return data.guestName && data.guestName.trim().length > 0;
     }
     return true;
   },
   {
-    message: 'Guest information is required when booking for someone else',
+    message: 'Guest name is required when booking for someone else',
     path: ['guestName'],
   }
 ).refine(
   (data) => {
-    if (data.bookingType === 'guest' && data.guestPhone) {
-      return /^(\+63|0)?[0-9]{10}$/.test(data.guestPhone);
+    if (data.bookingType === 'guest') {
+      return data.guestEmail && data.guestEmail.trim().length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.guestEmail);
+    }
+    return true;
+  },
+  {
+    message: 'Please enter a valid guest email address',
+    path: ['guestEmail'],
+  }
+).refine(
+  (data) => {
+    if (data.bookingType === 'guest') {
+      return data.guestPhone && data.guestPhone.trim().length > 0 && /^\+\d{1,4}\d{7,15}$/.test(data.guestPhone);
     }
     return true;
   },
@@ -92,9 +102,7 @@ export const tourBookingSchema = z.object({
 export const carRentalBookingSchema = z.object({
   name: nameSchema,
   email: emailSchema,
-  phone: z.string()
-    .min(1, 'Phone number is required')
-    .regex(/^(\+63|0)?[0-9]{10}$/, 'Please enter a valid Philippine phone number'),
+  phone: phoneSchema,
   pickupLocation: z.string()
     .min(1, 'Pickup location is required')
     .max(200, 'Pickup location is too long'),
