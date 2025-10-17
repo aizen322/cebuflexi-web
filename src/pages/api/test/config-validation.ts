@@ -114,7 +114,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
         message: 'Correctly formatted with proper line breaks'
       });
     } else {
-      let issues = [];
+      const issues = [];
       if (!hasMarkers) issues.push('missing private key markers');
       if (!hasNewlines) issues.push('missing line breaks (\\n)');
       if (!hasProperLength) issues.push('key too short');

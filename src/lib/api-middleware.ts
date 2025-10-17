@@ -121,10 +121,11 @@ export function withCORS(handler: (req: NextApiRequest, res: NextApiResponse) =>
 
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
-      return res.status(200).end();
+      res.status(200).end();
+      return;
     }
 
-    return handler(req, res);
+    await handler(req, res);
   };
 }
 
@@ -142,7 +143,7 @@ export function withSecurityHeaders(handler: (req: NextApiRequest, res: NextApiR
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }
 
-    return handler(req, res);
+    await handler(req, res);
   };
 }
 

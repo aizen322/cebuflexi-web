@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { verifyIdToken } from './src/lib/firebase-admin';
 
 // Define protected routes and their required roles
 const protectedRoutes = {
@@ -52,7 +52,8 @@ function getClientIP(request: NextRequest): string {
   if (realIP) return realIP;
   if (forwarded) return forwarded.split(',')[0].trim();
   
-  return request.ip || 'unknown';
+  // NextRequest doesn't have an ip property, so we'll use a fallback
+  return 'unknown';
 }
 
 async function verifyFirebaseToken(request: NextRequest): Promise<{ valid: boolean; user?: any }> {
@@ -64,16 +65,29 @@ async function verifyFirebaseToken(request: NextRequest): Promise<{ valid: boole
 
     const token = authHeader.substring(7);
     
-    // In production, verify with Firebase Admin SDK
-    // For now, we'll do basic validation
-    if (!token || token.length < 100) {
+    if (!token) {
       return { valid: false };
     }
 
-    // TODO: Implement actual Firebase token verification
-    // const decodedToken = await admin.auth().verifyIdToken(token);
+    // Verify token with Firebase Admin SDK
+    const verification = await verifyIdToken(token);
     
-    return { valid: true, user: { uid: 'mock-uid', role: 'user' } };
+    if (!verification.success) {
+      return { valid: false };
+    }
+
+    // Extract user info and role from the decoded token
+    const user = verification.user;
+    const role = user.customClaims?.role || 'user';
+    
+    return { 
+      valid: true, 
+      user: { 
+        uid: user.uid, 
+        email: user.email,
+        role: role 
+      } 
+    };
   } catch (error) {
     console.error('Token verification error:', error);
     return { valid: false };
@@ -177,15 +191,9 @@ export async function middleware(request: NextRequest) {
         }
       }
     } else {
-      // For page routes, redirect to login if not authenticated
-      // This is handled by ProtectedRoute component, but we can add additional checks
-      const authToken = request.cookies.get('auth-token');
-      
-      if (!authToken) {
-        const loginUrl = new URL('/auth/signin', request.url);
-        loginUrl.searchParams.set('callbackUrl', pathname);
-        return NextResponse.redirect(loginUrl);
-      }
+      // For page routes, authentication is handled by ProtectedRoute component
+      // The middleware will let the request through and let the component handle auth
+      // This allows for better UX with dialog-based authentication
     }
   }
 

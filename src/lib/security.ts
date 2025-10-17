@@ -5,7 +5,7 @@ export function sanitizeHTML(input: string): string {
   if (typeof input !== 'string') return '';
   
   // Basic cleanup first
-  let cleaned = input
+  const cleaned = input
     .trim()
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
     .replace(/\s+/g, ' '); // Normalize whitespace
@@ -38,7 +38,7 @@ export function sanitizeEmail(input: string): string {
   if (typeof input !== 'string') return '';
   
   // Basic cleanup
-  let cleaned = input
+  const cleaned = input
     .trim()
     .toLowerCase()
     .replace(/\s+/g, '') // Remove all whitespace

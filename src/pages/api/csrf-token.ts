@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { handleCSRFTokenRequest, withSecurityHeaders } from '@/lib/csrf';
+import { handleCSRFTokenRequest } from '@/lib/csrf';
 import { withApiSecurity, withErrorHandler } from '@/lib/api-middleware';
 
 const handler = async (req: NextApiRequest, res: NextApiResponse) => {

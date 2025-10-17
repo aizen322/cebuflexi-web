@@ -38,39 +38,49 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   if (csp) {
     const cspString = Array.isArray(csp) ? csp[0] : csp;
     
-    // Check for essential CSP directives
-    const requiredDirectives = ['default-src', 'script-src', 'style-src'];
-    const missingDirectives = requiredDirectives.filter(dir => !cspString.includes(dir));
-    
-    if (missingDirectives.length === 0) {
-      checks.push({
-        name: 'Content Security Policy',
-        status: 'pass',
-        message: 'CSP header present with required directives'
-      });
-    } else {
-      checks.push({
-        name: 'Content Security Policy',
-        status: 'warning',
-        message: `Missing directives: ${missingDirectives.join(', ')}`
-      });
-      if (overallStatus === 'pass') overallStatus = 'warning';
-    }
+    // Ensure cspString is a string before using includes
+    if (typeof cspString === 'string') {
+      // Check for essential CSP directives
+      const requiredDirectives = ['default-src', 'script-src', 'style-src'];
+      const missingDirectives = requiredDirectives.filter(dir => !cspString.includes(dir));
+      
+      if (missingDirectives.length === 0) {
+        checks.push({
+          name: 'Content Security Policy',
+          status: 'pass',
+          message: 'CSP header present with required directives'
+        });
+      } else {
+        checks.push({
+          name: 'Content Security Policy',
+          status: 'warning',
+          message: `Missing directives: ${missingDirectives.join(', ')}`
+        });
+        if (overallStatus === 'pass') overallStatus = 'warning';
+      }
 
-    // Check for unsafe-inline (security risk)
-    if (cspString.includes("'unsafe-inline'")) {
-      checks.push({
-        name: 'CSP Unsafe Inline',
-        status: 'warning',
-        message: 'Contains unsafe-inline which reduces security'
-      });
-      if (overallStatus === 'pass') overallStatus = 'warning';
+      // Check for unsafe-inline (security risk)
+      if (cspString.includes("'unsafe-inline'")) {
+        checks.push({
+          name: 'CSP Unsafe Inline',
+          status: 'warning',
+          message: 'Contains unsafe-inline which reduces security'
+        });
+        if (overallStatus === 'pass') overallStatus = 'warning';
+      } else {
+        checks.push({
+          name: 'CSP Unsafe Inline',
+          status: 'pass',
+          message: 'No unsafe-inline detected'
+        });
+      }
     } else {
       checks.push({
-        name: 'CSP Unsafe Inline',
-        status: 'pass',
-        message: 'No unsafe-inline detected'
+        name: 'Content Security Policy',
+        status: 'fail',
+        message: 'CSP header is not a string'
       });
+      overallStatus = 'fail';
     }
   } else {
     checks.push({
@@ -221,7 +231,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   const permissionsPolicy = headers['permissions-policy'];
   if (permissionsPolicy) {
     const value = Array.isArray(permissionsPolicy) ? permissionsPolicy[0] : permissionsPolicy;
-    if (value.includes('camera=()') && value.includes('microphone=()')) {
+    if (typeof value === 'string' && value.includes('camera=()') && value.includes('microphone=()')) {
       checks.push({
         name: 'Permissions-Policy',
         status: 'pass',
