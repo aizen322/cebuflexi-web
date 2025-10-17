@@ -16,7 +16,8 @@ import {
   Clock,
   Mail,
   Phone,
-  Home
+  Home,
+  Check
 } from "lucide-react";
 import { allTours, vehicles } from "@/lib/mockData";
 import { getBookingById, Booking } from "@/services/bookingService";
@@ -317,6 +318,34 @@ export default function BookingConfirmationPage() {
                               <p><strong>Pickup:</strong> {customizations.pickupLocation}</p>
                               {customizations.dropoffLocation && (
                                 <p><strong>Drop-off:</strong> {customizations.dropoffLocation}</p>
+                              )}
+                              {customizations.addOns && (
+                                <div className="mt-3">
+                                  <p className="font-semibold mb-2">Selected Add-ons:</p>
+                                  <div className="space-y-1">
+                                    {customizations.addOns.insurance && (
+                                      <div className="flex items-center text-sm">
+                                        <Check className="h-4 w-4 mr-2 text-blue-600" />
+                                        Full Insurance Coverage (+₱500/day)
+                                      </div>
+                                    )}
+                                    {customizations.addOns.gps && (
+                                      <div className="flex items-center text-sm">
+                                        <Check className="h-4 w-4 mr-2 text-blue-600" />
+                                        GPS Navigation (+₱200/day)
+                                      </div>
+                                    )}
+                                    {customizations.addOns.childSeat && (
+                                      <div className="flex items-center text-sm">
+                                        <Check className="h-4 w-4 mr-2 text-blue-600" />
+                                        Child Safety Seat (+₱150/day)
+                                      </div>
+                                    )}
+                                    {!customizations.addOns.insurance && !customizations.addOns.gps && !customizations.addOns.childSeat && (
+                                      <p className="text-gray-500 text-sm">No add-ons selected</p>
+                                    )}
+                                  </div>
+                                </div>
                               )}
                             </div>
                           )}

@@ -406,20 +406,48 @@ export default function CarRentalBookingPage() {
                           </div>
                           {selectedDates?.from && selectedDates?.to && (
                             <div className="mt-3 pt-3 border-t border-blue-200">
-                              <div className="flex items-center justify-between text-sm">
-                                <div>
-                                  <p className="text-blue-600 font-medium">Pickup</p>
-                                  <p className="text-blue-900">{selectedDates.from.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                              {selectedDates.from.getTime() === selectedDates.to.getTime() ? (
+                                // Same day rental - split color indicator
+                                <div className="text-center">
+                                  <div className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-gradient-to-r from-green-100 to-orange-100 border-2 border-green-500 border-r-orange-500">
+                                    <div className="flex items-center space-x-2">
+                                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                      <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                                    </div>
+                                    <div className="ml-3">
+                                      <p className="text-sm font-medium text-gray-900">Same Day Rental</p>
+                                      <p className="text-xs text-gray-600">{selectedDates.from.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                    </div>
+                                  </div>
+                                  <p className="text-center text-xs text-blue-600 font-semibold mt-2">
+                                    1 day rental
+                                  </p>
                                 </div>
-                                <Clock className="h-4 w-4 text-blue-400" />
-                                <div className="text-right">
-                                  <p className="text-blue-600 font-medium">Return</p>
-                                  <p className="text-blue-900">{selectedDates.to.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                              ) : (
+                                // Different dates - separate color indicators
+                                <div className="flex items-center justify-between text-sm">
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                    <div>
+                                      <p className="text-green-600 font-medium">Pickup</p>
+                                      <p className="text-gray-900">{selectedDates.from.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                    </div>
+                                  </div>
+                                  <Clock className="h-4 w-4 text-blue-400" />
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                                    <div className="text-right">
+                                      <p className="text-orange-600 font-medium">Return</p>
+                                      <p className="text-gray-900">{selectedDates.to.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                              <p className="text-center text-xs text-blue-600 font-semibold mt-2">
-                                {getRentalDays()} {getRentalDays() === 1 ? 'day' : 'days'} rental
-                              </p>
+                              )}
+                              {selectedDates.from.getTime() !== selectedDates.to.getTime() && (
+                                <p className="text-center text-xs text-blue-600 font-semibold mt-2">
+                                  {getRentalDays()} {getRentalDays() === 1 ? 'day' : 'days'} rental
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -429,6 +457,12 @@ export default function CarRentalBookingPage() {
                           onSelect={setSelectedDates}
                           disabled={(date) => date < new Date()}
                           className="rounded-md border"
+                          classNames={{
+                            day_range_start: "bg-green-500 text-white hover:bg-green-600 focus:bg-green-600",
+                            day_range_end: "bg-orange-500 text-white hover:bg-orange-600 focus:bg-orange-600",
+                            day_range_middle: "bg-blue-200 text-gray-700 hover:bg-gray-100",
+                            day_selected: "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                          }}
                         />
                       </div>
 

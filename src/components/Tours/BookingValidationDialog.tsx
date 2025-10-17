@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useRouter } from "next/router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -25,6 +26,7 @@ export function BookingValidationDialog({
   confirmedCount,
   bookings
 }: BookingValidationDialogProps) {
+  const router = useRouter();
   const formatDate = (date: Date) => {
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
@@ -121,7 +123,10 @@ export function BookingValidationDialog({
           )}
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" onClick={onClose}>
+            <Button 
+              variant="outline" 
+              onClick={hasPending ? () => router.push("/account/bookings") : onClose}
+            >
               {hasPending ? "Review Bookings" : "Cancel"}
             </Button>
             {canProceed && (
