@@ -122,40 +122,63 @@ export default function TourDetailPage() {
       return;
     }
 
-    if (!bookingData.phone) {
-      toast({
-        title: "Phone Required",
-        description: "Please provide a contact phone number.",
-        variant: "destructive",
+    try {
+      // Import validation and security utilities
+      const { tourBookingSchema, validateForm } = await import('@/lib/validation');
+      const { sanitizeUserInput } = await import('@/lib/security');
+      
+      // Validate booking data
+      const validation = validateForm(tourBookingSchema, {
+        ...bookingData,
+        groupSize: Number(bookingData.groupSize),
       });
-      return;
-    }
-
-    if (bookingData.bookingType === "guest") {
-      if (!bookingData.guestName || !bookingData.guestEmail || !bookingData.guestPhone) {
+      
+      if (!validation.success) {
         toast({
-          title: "Guest Information Required",
-          description: "Please provide all guest details when booking for someone else.",
+          title: "Validation Error",
+          description: "Please check your input and try again.",
           variant: "destructive",
         });
         return;
       }
-    }
 
-    // Check for existing bookings first
-    try {
+      // Sanitize validated data
+      const sanitizedData = {
+        ...validation.data,
+        name: sanitizeUserInput(validation.data.name, 'text'),
+        email: sanitizeUserInput(validation.data.email, 'email'),
+        phone: sanitizeUserInput(validation.data.phone, 'phone'),
+        specialRequests: validation.data.specialRequests ? sanitizeUserInput(validation.data.specialRequests, 'text') : '',
+        guestName: validation.data.guestName ? sanitizeUserInput(validation.data.guestName, 'text') : '',
+        guestEmail: validation.data.guestEmail ? sanitizeUserInput(validation.data.guestEmail, 'email') : '',
+        guestPhone: validation.data.guestPhone ? sanitizeUserInput(validation.data.guestPhone, 'phone') : '',
+      };
+
+      // Update booking data with sanitized values
+      setBookingData(prev => ({
+        ...prev,
+        ...sanitizedData,
+        groupSize: Number(sanitizedData.groupSize),
+      }));
+
+      // Check for existing bookings first
       const existingBookings = await checkUserPendingBookings(user.uid);
       if (existingBookings.hasPending || existingBookings.hasConfirmed) {
         setValidationData(existingBookings);
         setShowValidationDialog(true);
         return;
       }
-    } catch (error) {
-      console.error("Error checking existing bookings:", error);
-      // Continue with booking if check fails
-    }
 
-    await proceedWithBooking();
+      await proceedWithBooking();
+    } catch (error) {
+      console.error("Error validating booking:", error);
+      toast({
+        title: "Validation Error",
+        description: "Please check your input and try again.",
+        variant: "destructive",
+      });
+      return;
+    }
   };
 
   const proceedWithBooking = async () => {

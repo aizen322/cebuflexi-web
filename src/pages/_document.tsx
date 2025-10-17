@@ -14,6 +14,8 @@ export default function Document() {
           src="https://cdn.softgen.ai/script.js"
           async
           data-softgen-monitoring="true"
+          integrity="sha384-[INTEGRITY_HASH]"
+          crossOrigin="anonymous"
         />
       </Head>
       <body

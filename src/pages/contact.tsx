@@ -33,13 +33,32 @@ export default function ContactPage() {
     setIsSubmitting(true);
     
     try {
-      await createContactSubmission({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        subject: formData.subject,
-        message: formData.message,
-      });
+      // Import validation schema
+      const { contactFormSchema, validateForm } = await import('@/lib/validation');
+      const { sanitizeUserInput } = await import('@/lib/security');
+      
+      // Validate form data
+      const validation = validateForm(contactFormSchema, formData);
+      
+      if (!validation.success) {
+        toast({
+          title: "Validation Error",
+          description: "Please check your input and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Sanitize validated data
+      const sanitizedData = {
+        name: sanitizeUserInput(validation.data.name, 'text'),
+        email: sanitizeUserInput(validation.data.email, 'email'),
+        phone: sanitizeUserInput(validation.data.phone || '', 'phone'),
+        subject: sanitizeUserInput(validation.data.subject, 'text'),
+        message: sanitizeUserInput(validation.data.message, 'text'),
+      };
+      
+      await createContactSubmission(sanitizedData);
       
       toast({
         title: "Message Sent!",
