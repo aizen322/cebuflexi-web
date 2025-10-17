@@ -33,7 +33,7 @@ export default function TourDetailPage() {
     name: "",
     email: "",
     phone: "",
-    groupSize: 2,
+    groupSize: 1, // Will be updated when tour loads
     specialRequests: "",
     addOns: [] as string[],
     bookingType: "self" as "self" | "guest",
@@ -47,7 +47,7 @@ export default function TourDetailPage() {
 
   // Find tour only after router query is loaded
   const tour = router.isReady && id ? allTours.find(t => t.id === id) : null;
-
+ 
   // Update form data when user is authenticated
   useEffect(() => {
     if (user) {
@@ -58,6 +58,16 @@ export default function TourDetailPage() {
       }));
     }
   }, [user]);
+
+  // Update groupSize when tour loads
+  useEffect(() => {
+    if (tour) {
+      setBookingData(prev => ({
+        ...prev,
+        groupSize: tour.groupSize.min,
+      }));
+    }
+  }, [tour]);
 
   // Show loading state while router is loading
   if (!router.isReady) {
@@ -184,7 +194,7 @@ export default function TourDetailPage() {
         name: user.displayName || "",
         email: user.email || "",
         phone: "",
-        groupSize: 2,
+        groupSize: tour.groupSize.min,
         specialRequests: "",
         addOns: [],
         bookingType: "self",
@@ -205,6 +215,7 @@ export default function TourDetailPage() {
       setIsBooking(false);
     }
   };
+
 
   return (
     <>
@@ -479,7 +490,7 @@ export default function TourDetailPage() {
                           min={tour.groupSize.min}
                           max={tour.groupSize.max}
                           required
-                          value={tour.groupSize.min}
+                          value={bookingData.groupSize}
                           onChange={(e) => setBookingData({...bookingData, groupSize: Number(e.target.value)})}
                         />
                         <p className="text-xs text-gray-500 mt-1">
