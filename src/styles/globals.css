@@ -121,4 +121,31 @@
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
   }
+
+  /* Custom numbered markers for Leaflet map */
+  .custom-numbered-marker {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  .numbered-marker {
+    width: 30px;
+    height: 30px;
+    background: #3b82f6;
+    border: 3px solid white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+  }
+
+  .numbered-marker:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  }
 }

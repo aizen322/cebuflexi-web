@@ -4,6 +4,7 @@ import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { HeroSection } from "@/components/Home/HeroSection";
 import { FeaturedTours } from "@/components/Home/FeaturedTours";
+import { DIYTourTeaser } from "@/components/Home/DIYTourTeaser";
 import { WhyChooseUs } from "@/components/Home/WhyChooseUs";
 import { CarRentalTeaser } from "@/components/Home/CarRentalTeaser";
 import { Testimonials } from "@/components/Home/Testimonials";
@@ -28,6 +29,7 @@ export default function HomePage() {
       <main className="overflow-x-hidden">
         <HeroSection />
         <FeaturedTours />
+        <DIYTourTeaser />
         <WhyChooseUs />
         <CarRentalTeaser />
         <Testimonials />

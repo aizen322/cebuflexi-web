@@ -87,3 +87,60 @@ export interface SearchParams {
   endDate?: Date;
   groupSize?: number;
 }
+
+export type TourType = "cebu-city" | "mountain";
+export type TourDuration = "1-day" | "2-days";
+
+export interface Landmark {
+  id: string;
+  name: string;
+  description: string;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  estimatedDuration: number; // in minutes
+  image: string;
+  category: "Historical" | "Religious" | "Cultural" | "Nature";
+  tourType: TourType;
+}
+
+export interface DayItineraryPlan {
+  day: 1 | 2;
+  tourType: TourType;
+  landmarks: Array<{
+    id: string;
+    name: string;
+    image: string;
+    duration: number;
+    order: number;
+  }>;
+  totalTime: number;
+}
+
+export interface MultiDayItineraryDetails {
+  duration: TourDuration;
+  days: DayItineraryPlan[];
+  totalPrice: number;
+  isFullPackage: boolean;
+}
+
+export interface CustomItinerary {
+  selectedLandmarks: Landmark[];
+  totalTime: number; // in minutes
+  totalPrice: number;
+  isFullPackage: boolean;
+}
+
+export interface ItineraryDetails {
+  landmarks: Array<{
+    id: string;
+    name: string;
+    image: string;
+    duration: number;
+    order: number;
+  }>;
+  totalTime: number;
+  totalPrice: number;
+  isFullPackage: boolean;
+}

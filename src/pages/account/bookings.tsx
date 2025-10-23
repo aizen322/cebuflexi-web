@@ -28,6 +28,7 @@ import { allTours } from "@/lib/mockData";
 import { vehicles } from "@/lib/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
+import { parseItineraryDetails, isCustomTour, getFirstLandmarkImage, getItinerarySummary, getLandmarkNames } from "@/lib/customTourHelpers";
 
 export default function UserBookingsPage() {
   const router = useRouter();
@@ -99,7 +100,15 @@ export default function UserBookingsPage() {
   };
 
   const getBookingItem = (booking: Booking) => {
-    if (booking.bookingType === "tour" && booking.tourId) {
+    if (isCustomTour(booking)) {
+      return {
+        id: "custom-tour",
+        title: "Custom DIY Tour",
+        image: getFirstLandmarkImage(booking) || "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=400&h=300&fit=crop",
+        summary: getItinerarySummary(booking),
+        landmarkNames: getLandmarkNames(booking)
+      };
+    } else if (booking.bookingType === "tour" && booking.tourId) {
       return allTours.find(tour => tour.id === booking.tourId);
     } else if (booking.bookingType === "vehicle" && booking.vehicleId) {
       return vehicles.find(vehicle => vehicle.id === booking.vehicleId);
@@ -206,13 +215,20 @@ export default function UserBookingsPage() {
                           <div className="lg:w-1/4">
                             <div className="relative h-48 lg:h-32 rounded-lg overflow-hidden">
                               <img
-                                src={booking.bookingType === "tour" ? (item as any).images?.[0] : (item as any).image}
-                                alt={booking.bookingType === "tour" ? (item as any).title : (item as any).name}
+                                src={isCustomTour(booking) ? (item as any).image : 
+                                     booking.bookingType === "tour" ? (item as any).images?.[0] : (item as any).image}
+                                alt={isCustomTour(booking) ? "Custom DIY Tour" : 
+                                     booking.bookingType === "tour" ? (item as any).title : (item as any).name}
                                 className="w-full h-full object-cover"
                               />
                               <Badge className={`absolute top-2 left-2 ${getStatusBadgeColor(booking.status)}`}>
                                 {booking.status}
                               </Badge>
+                              {isCustomTour(booking) && (
+                                <Badge className="absolute top-2 right-2 bg-blue-600">
+                                  Custom Tour
+                                </Badge>
+                              )}
                             </div>
                           </div>
 
@@ -220,12 +236,25 @@ export default function UserBookingsPage() {
                             <div>
                               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
                                 <h3 className="text-xl font-bold">
-                                  {booking.bookingType === "tour" ? (item as any).title : (item as any).name}
+                                  {isCustomTour(booking) ? "Custom DIY Tour" : 
+                                   booking.bookingType === "tour" ? (item as any).title : (item as any).name}
                                 </h3>
                                 <div className="text-2xl font-bold text-blue-600">
                                   ₱{booking.totalPrice.toLocaleString()}
                                 </div>
                               </div>
+
+                              {/* Custom Tour Summary */}
+                              {isCustomTour(booking) && (
+                                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                                  <p className="text-sm font-semibold text-blue-800 mb-1">
+                                    {(item as any).summary}
+                                  </p>
+                                  <p className="text-xs text-blue-700">
+                                    {(item as any).landmarkNames}
+                                  </p>
+                                </div>
+                              )}
 
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                 <div className="flex items-center text-sm text-gray-600">
@@ -246,8 +275,10 @@ export default function UserBookingsPage() {
                                 )}
 
                                 <div className="flex items-center text-sm text-gray-600">
-                                  {booking.bookingType === "tour" ? <Map className="h-4 w-4 mr-2" /> : <Car className="h-4 w-4 mr-2" />}
-                                  <span>{booking.bookingType === "tour" ? "Tour" : "Vehicle Rental"}</span>
+                                  {isCustomTour(booking) ? <Map className="h-4 w-4 mr-2" /> :
+                                   booking.bookingType === "tour" ? <Map className="h-4 w-4 mr-2" /> : <Car className="h-4 w-4 mr-2" />}
+                                  <span>{isCustomTour(booking) ? "Custom Tour" : 
+                                         booking.bookingType === "tour" ? "Tour" : "Vehicle Rental"}</span>
                                 </div>
 
                                 <div className="flex items-center text-sm text-gray-600">
@@ -256,10 +287,123 @@ export default function UserBookingsPage() {
                                 </div>
                               </div>
 
+                              {/* Add duration for custom tours */}
+                              {isCustomTour(booking) && (() => {
+                                const itineraryDetails = parseItineraryDetails(booking);
+                                if (!itineraryDetails) return null;
+                                
+                                const days = (itineraryDetails as any).days
+                                  ? (itineraryDetails as any).duration === "2-days" ? 2 : 1
+                                  : 1;
+                                
+                                const totalHours = (itineraryDetails as any).days
+                                  ? Math.ceil((itineraryDetails as any).days.reduce((sum: number, d: any) => sum + d.totalTime, 0) / 60)
+                                  : Math.ceil((itineraryDetails as any).totalTime / 60);
+                                
+                                return (
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                    <div className="flex items-center text-sm text-gray-600">
+                                      <Clock className="h-4 w-4 mr-2" />
+                                      <span>Day(s): {days}</span>
+                                    </div>
+                                    <div className="flex items-center text-sm text-gray-600">
+                                      <Clock className="h-4 w-4 mr-2" />
+                                      <span>Duration: {totalHours}h total</span>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+
                               {booking.specialRequests && (
                                 <div className="mb-4">
                                   <h4 className="font-semibold text-sm mb-1">Special Requests:</h4>
                                   <p className="text-sm text-gray-600">{booking.specialRequests}</p>
+                                </div>
+                              )}
+
+                              {/* Custom Tour Itinerary Details */}
+                              {isCustomTour(booking) && (
+                                <div className="mb-4">
+                                  <h4 className="font-semibold text-sm mb-2">Itinerary Details:</h4>
+                                  {(() => {
+                                    const details: any = parseItineraryDetails(booking);
+                                    if (!details) return null;
+
+                                    const isMultiDay = Array.isArray(details?.days);
+
+                                    if (isMultiDay) {
+                                      const days = details.days as Array<any>;
+                                      const totalHours = Math.ceil((days || []).reduce((sum, d) => sum + (d?.totalTime || 0), 0) / 60);
+                                      return (
+                                        <div className="space-y-4">
+                                          <div className="text-sm text-gray-600">
+                                            <strong>Tour Duration:</strong> 2 Days • {totalHours} hours
+                                          </div>
+                                          {(days || []).map((dayPlan, idx) => (
+                                            <div key={idx} className="p-3 bg-gray-50 rounded-lg">
+                                              <h5 className="font-semibold text-sm mb-2">
+                                                Day {dayPlan?.day}: {dayPlan?.tourType === "cebu-city" ? "Cebu City Tour" : "Mountain Tour"}
+                                              </h5>
+                                              <div className="text-sm text-gray-600 mb-2">
+                                                <strong>Duration:</strong> {Math.ceil((dayPlan?.totalTime || 0) / 60)} hours
+                                              </div>
+                                              <div>
+                                                <strong className="text-sm">Landmarks:</strong>
+                                                <div className="mt-1 space-y-1">
+                                                  {((dayPlan?.landmarks as Array<any>) || [])
+                                                    .slice()
+                                                    .sort((a, b) => (a?.order || 0) - (b?.order || 0))
+                                                    .map((landmark: any) => (
+                                                      <div key={landmark.id} className="text-xs text-gray-600 flex items-center gap-2">
+                                                        <Badge variant="outline" className="w-5 h-5 rounded-full flex items-center justify-center p-0 text-xs">
+                                                          {landmark.order}
+                                                        </Badge>
+                                                        {landmark.name} (~{landmark.duration}min)
+                                                      </div>
+                                                    ))}
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      );
+                                    }
+
+                                    // Single-day fallback
+                                    const single = details;
+                                    const singleHours = Math.ceil((single?.totalTime || 0) / 60);
+                                    return (
+                                      <div className="space-y-2">
+                                        <div className="text-sm text-gray-600">
+                                          <strong>Package:</strong> {single?.isFullPackage ? "Full Package Deal" : "Hourly Rate"}
+                                        </div>
+                                        <div className="text-sm text-gray-600">
+                                          <strong>Duration:</strong> {singleHours} hours
+                                        </div>
+                                        {typeof single?.totalPrice === 'number' && (
+                                          <div className="text-sm text-gray-600">
+                                            <strong>Price per person:</strong> ₱{single.totalPrice.toLocaleString()}
+                                          </div>
+                                        )}
+                                        <div className="mt-2">
+                                          <strong className="text-sm">Landmarks:</strong>
+                                          <div className="mt-1 space-y-1">
+                                            {((single?.landmarks as Array<any>) || [])
+                                              .slice()
+                                              .sort((a, b) => (a?.order || 0) - (b?.order || 0))
+                                              .map((landmark: any) => (
+                                                <div key={landmark.id} className="text-xs text-gray-600 flex items-center gap-2">
+                                                  <Badge variant="outline" className="w-5 h-5 rounded-full flex items-center justify-center p-0 text-xs">
+                                                    {landmark.order}
+                                                  </Badge>
+                                                  {landmark.name} (~{landmark.duration}min)
+                                                </div>
+                                              ))}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               )}
 

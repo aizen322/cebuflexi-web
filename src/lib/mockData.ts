@@ -1,4 +1,4 @@
-import { Tour, Vehicle, Testimonial, BlogPost } from "@/types";
+import { Tour, Vehicle, Testimonial, BlogPost, Landmark } from "@/types";
 
 export const featuredTours: Tour[] = [
   {
@@ -797,5 +797,167 @@ export const blogPosts: BlogPost[] = [
     image: "https://images.unsplash.com/photo-1607863680198-23d4b2565df0?w=1200&h=800&fit=crop",
     keywords: ["Cebu budget travel", "cheap Cebu trip", "backpacking Cebu", "Cebu on a budget", "affordable Cebu travel"],
     category: "Travel Planning"
+  }
+];
+
+export const cebuLandmarks: Landmark[] = [
+  {
+    id: "fort-san-pedro",
+    name: "Fort San Pedro",
+    description: "The oldest triangular fortress in the Philippines, built by Spanish conquistadors in 1565. A historical military defense structure with well-preserved walls and cannons.",
+    location: {
+      lat: 10.2933,
+      lng: 123.9069
+    },
+    estimatedDuration: 45,
+    image: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=800&h=600&fit=crop",
+    category: "Historical",
+    tourType: "cebu-city" as const
+  },
+  {
+    id: "magellans-cross",
+    name: "Magellan's Cross",
+    description: "An iconic Christian cross planted by Portuguese explorer Ferdinand Magellan upon arriving in Cebu in 1521. Housed in a chapel near the Basilica del Santo Niño.",
+    location: {
+      lat: 10.2935,
+      lng: 123.9018
+    },
+    estimatedDuration: 30,
+    image: "https://images.unsplash.com/photo-1548013146-72479768bada?w=800&h=600&fit=crop",
+    category: "Historical",
+    tourType: "cebu-city" as const
+  },
+  {
+    id: "sto-nino-church",
+    name: "Basilica Minore del Santo Niño",
+    description: "The oldest Roman Catholic church in the Philippines, home to the revered statue of Santo Niño de Cebu. A major pilgrimage site with stunning architecture.",
+    location: {
+      lat: 10.2946,
+      lng: 123.9012
+    },
+    estimatedDuration: 60,
+    image: "https://images.unsplash.com/photo-1502920514313-52581002a659?w=800&h=600&fit=crop",
+    category: "Religious",
+    tourType: "cebu-city" as const
+  },
+  {
+    id: "heritage-monument",
+    name: "Heritage of Cebu Monument",
+    description: "A massive sculpture depicting significant events in Cebu's history, from pre-colonial times to modern era. An impressive display of local artistry and craftsmanship.",
+    location: {
+      lat: 10.2954,
+      lng: 123.9021
+    },
+    estimatedDuration: 30,
+    image: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?w=800&h=600&fit=crop",
+    category: "Cultural",
+    tourType: "cebu-city" as const
+  },
+  {
+    id: "yap-sandiego-house",
+    name: "Yap-Sandiego Ancestral House",
+    description: "One of the oldest residential houses in the Philippines, built in the late 1600s. Features a collection of antique furniture and religious artifacts.",
+    location: {
+      lat: 10.2951,
+      lng: 123.9015
+    },
+    estimatedDuration: 40,
+    image: "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=800&h=600&fit=crop",
+    category: "Cultural",
+    tourType: "cebu-city" as const
+  },
+  {
+    id: "casa-gorordo",
+    name: "Casa Gorordo Museum",
+    description: "A beautifully restored 19th-century house museum showcasing Cebuano lifestyle during the Spanish colonial period. Features period furniture and memorabilia.",
+    location: {
+      lat: 10.2958,
+      lng: 123.9025
+    },
+    estimatedDuration: 50,
+    image: "https://images.unsplash.com/photo-1564760055775-d63b17a55c44?w=800&h=600&fit=crop",
+    category: "Cultural",
+    tourType: "cebu-city" as const
+  },
+  {
+    id: "taoist-temple",
+    name: "Cebu Taoist Temple",
+    description: "A beautiful Taoist temple in Beverly Hills with intricate architecture and panoramic views of Cebu City. Features ornate decorations, dragon sculptures, and prayer areas.",
+    location: {
+      lat: 10.3374,
+      lng: 123.8942
+    },
+    estimatedDuration: 45,
+    image: "https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=800&h=600&fit=crop",
+    category: "Religious",
+    tourType: "cebu-city" as const
+  }
+];
+
+export const mountainLandmarks: Landmark[] = [
+  {
+    id: "buwakan-ni-alejandra",
+    name: "Buwakan ni Alejandra",
+    description: "A picturesque flower garden in the mountains of Busay featuring colorful blooms, scenic views, and Instagram-worthy spots. Perfect for nature lovers and photography enthusiasts.",
+    location: {
+      lat: 10.3645,
+      lng: 123.8756
+    },
+    estimatedDuration: 60,
+    image: "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=800&h=600&fit=crop",
+    category: "Nature",
+    tourType: "mountain" as const
+  },
+  {
+    id: "sirao-garden",
+    name: "Sirao Pictorial Garden",
+    description: "Famous for its vibrant celosia flowers creating a stunning rainbow landscape. Often called 'Little Amsterdam' for its colorful displays and mountain backdrop.",
+    location: {
+      lat: 10.3728,
+      lng: 123.8698
+    },
+    estimatedDuration: 50,
+    image: "https://images.unsplash.com/photo-1464226184884-fa280b87c399?w=800&h=600&fit=crop",
+    category: "Nature",
+    tourType: "mountain" as const
+  },
+  {
+    id: "tops-cebu",
+    name: "Tops Lookout",
+    description: "The highest viewpoint in Cebu City offering breathtaking 360-degree views of the city, surrounding islands, and mountains. Best visited during sunrise or sunset.",
+    location: {
+      lat: 10.3512,
+      lng: 123.8734
+    },
+    estimatedDuration: 45,
+    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop",
+    category: "Nature",
+    tourType: "mountain" as const
+  },
+  {
+    id: "little-kyoto",
+    name: "Little Kyoto Cebu",
+    description: "A Japanese-inspired garden and café featuring zen gardens, koi ponds, traditional Japanese architecture, and tea ceremonies. A peaceful escape in the mountains.",
+    location: {
+      lat: 10.3598,
+      lng: 123.8712
+    },
+    estimatedDuration: 55,
+    image: "https://images.unsplash.com/photo-1480796927426-f609979314bd?w=800&h=600&fit=crop",
+    category: "Cultural",
+    tourType: "mountain" as const
+  },
+  {
+    id: "temple-of-leah",
+    name: "Temple of Leah",
+    description: "A grand Roman-inspired temple built as a symbol of undying love. Features impressive architecture, ornate sculptures, and panoramic views of Cebu. A monument to eternal devotion.",
+    location: {
+      lat: 10.3456,
+      lng: 123.8845
+    },
+    estimatedDuration: 50,
+    image: "https://images.unsplash.com/photo-1548625149-fc4a29cf7092?w=800&h=600&fit=crop",
+    category: "Cultural",
+    tourType: "mountain" as const
   }
 ];

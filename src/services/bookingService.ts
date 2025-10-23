@@ -21,7 +21,7 @@ export interface Booking {
   userName: string;
   tourId?: string;
   vehicleId?: string;
-  bookingType: "tour" | "vehicle";
+  bookingType: "tour" | "vehicle" | "custom-tour";
   startDate: Date;
   endDate: Date;
   guests?: number;
@@ -36,6 +36,7 @@ export interface Booking {
   guestEmail?: string;
   guestPhone?: string;
   guestPhoneCountryCode?: string;
+  itineraryDetails?: string; // JSON string for custom tours
   createdAt: Date;
   updatedAt?: Date;
 }

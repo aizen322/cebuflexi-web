@@ -17,11 +17,16 @@ import {
   Mail,
   Phone,
   Home,
-  Check
+  Check,
+  Map
 } from "lucide-react";
-import { allTours, vehicles } from "@/lib/mockData";
+import { allTours, vehicles, cebuLandmarks, mountainLandmarks } from "@/lib/mockData";
 import { getBookingById, Booking } from "@/services/bookingService";
 import { motion } from "framer-motion";
+import { parseItineraryDetails, isCustomTour } from "@/lib/customTourHelpers";
+import { ItineraryMap } from "@/components/CustomItinerary/ItineraryMap";
+import { Landmark, MultiDayItineraryDetails } from "@/types";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function BookingConfirmationPage() {
   const router = useRouter();
@@ -29,6 +34,7 @@ export default function BookingConfirmationPage() {
   const [bookingData, setBookingData] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentConfirmationDay, setCurrentConfirmationDay] = useState<1 | 2>(1);
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -100,6 +106,14 @@ export default function BookingConfirmationPage() {
       customizations = null;
     }
   }
+
+  // Parse custom tour itinerary details
+  const itineraryDetails = isCustomTour(bookingData) ? parseItineraryDetails(bookingData) : null;
+  
+  // Detect multi-day vs single-day tours
+  const isMultiDay = itineraryDetails && (itineraryDetails as MultiDayItineraryDetails).days !== undefined;
+  const multiDayDetails = isMultiDay ? (itineraryDetails as MultiDayItineraryDetails) : null;
+  const singleDayDetails = !isMultiDay ? (itineraryDetails as any) : null;
 
   return (
     <>
@@ -175,6 +189,16 @@ export default function BookingConfirmationPage() {
                           month: 'long', 
                           day: 'numeric' 
                         })}
+                        {isCustomTour(bookingData) && itineraryDetails && (
+                          <>
+                            {' • '}
+                            <strong>Day(s):</strong> {
+                              (itineraryDetails as MultiDayItineraryDetails).days 
+                                ? (itineraryDetails as MultiDayItineraryDetails).duration === "2-days" ? "2" : "1"
+                                : "1"
+                            }
+                          </>
+                        )}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -239,16 +263,216 @@ export default function BookingConfirmationPage() {
               <Card className="mt-8">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    {bookingData.bookingType === "tour" ? (
+                    {isCustomTour(bookingData) ? (
+                      <Map className="h-5 w-5 text-blue-600" />
+                    ) : bookingData.bookingType === "tour" ? (
                       <MapPin className="h-5 w-5 text-blue-600" />
                     ) : (
                       <Car className="h-5 w-5 text-blue-600" />
                     )}
-                    {bookingData.bookingType === "tour" ? "Tour Package" : "Vehicle Rental"} Details
+                    {isCustomTour(bookingData) ? "Custom DIY Tour" : 
+                     bookingData.bookingType === "tour" ? "Tour Package" : "Vehicle Rental"} Details
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {bookingData.bookingType === "tour" && tour ? (
+                  {isCustomTour(bookingData) && itineraryDetails ? (
+                    <>
+                      {isMultiDay && multiDayDetails ? (
+                        <>
+                          {/* Header showing total summary */}
+                          <div className="text-center mb-6">
+                            <h3 className="text-2xl font-bold mb-2">2-Day Custom DIY Tour</h3>
+                            <p className="text-gray-600">
+                              {multiDayDetails.days.reduce((sum, d) => sum + d.landmarks.length, 0)} total landmarks •{' '}
+                              {Math.ceil(multiDayDetails.days.reduce((sum, d) => sum + d.totalTime, 0) / 60)} hours total
+                            </p>
+                          </div>
+
+                          {/* Day Tabs */}
+                          <div className="mb-6">
+                            <Tabs value={`day${currentConfirmationDay}`} onValueChange={(v) => setCurrentConfirmationDay(v === "day1" ? 1 : 2)}>
+                              <TabsList className="grid w-full grid-cols-2">
+                                <TabsTrigger value="day1">
+                                  Day 1 - {multiDayDetails.days[0].tourType === "mountain" ? "Mountain" : "Cebu City"}
+                                </TabsTrigger>
+                                <TabsTrigger value="day2">
+                                  Day 2 - {multiDayDetails.days[1].tourType === "mountain" ? "Mountain" : "Cebu City"}
+                                </TabsTrigger>
+                              </TabsList>
+                            </Tabs>
+                          </div>
+
+                          {/* Current Day Details */}
+                          {(() => {
+                            const currentDay = multiDayDetails.days.find(d => d.day === currentConfirmationDay);
+                            if (!currentDay) return null;
+
+                            return (
+                              <>
+                                {/* Map for current day */}
+                                <div className="mb-6">
+                                  <h4 className="font-semibold mb-3">Day {currentDay.day} Route</h4>
+                                  <div className="h-64 rounded-lg overflow-hidden">
+                                    <ItineraryMap
+                                      landmarks={currentDay.tourType === "mountain" ? mountainLandmarks : cebuLandmarks}
+                                      selectedLandmarks={currentDay.landmarks
+                                        .map(l => [...cebuLandmarks, ...mountainLandmarks].find(cl => cl.id === l.id))
+                                        .filter(Boolean) as Landmark[]}
+                                      markerColor={currentDay.day === 1 ? "blue" : "green"}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Landmarks for current day */}
+                                <div className="mb-6">
+                                  <h4 className="font-semibold mb-3">Day {currentDay.day} Itinerary</h4>
+                                  <div className="space-y-3">
+                                    {currentDay.landmarks
+                                      .sort((a, b) => a.order - b.order)
+                                      .map((landmark) => (
+                                        <div key={landmark.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                          <div className="flex-shrink-0">
+                                            <Badge className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center">
+                                              {landmark.order}
+                                            </Badge>
+                                          </div>
+                                          <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
+                                            <img
+                                              src={landmark.image}
+                                              alt={landmark.name}
+                                              className="w-full h-full object-cover"
+                                            />
+                                          </div>
+                                          <div className="flex-grow">
+                                            <h5 className="font-semibold">{landmark.name}</h5>
+                                            <p className="text-sm text-gray-600">
+                                              ~{landmark.duration} minutes visit
+                                            </p>
+                                          </div>
+                                        </div>
+                                      ))}
+                                  </div>
+                                </div>
+                              </>
+                            );
+                          })()}
+
+                          {/* Pricing Summary for Multi-Day */}
+                          <div className="bg-blue-50 p-4 rounded-lg">
+                            <h4 className="font-semibold mb-2">Pricing Summary</h4>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex justify-between">
+                                <span>Tour Duration:</span>
+                                <span className="font-semibold">2 Days</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Day 1:</span>
+                                <span>{Math.ceil(multiDayDetails.days[0].totalTime / 60)}h • {multiDayDetails.days[0].landmarks.length} landmarks</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Day 2:</span>
+                                <span>{Math.ceil(multiDayDetails.days[1].totalTime / 60)}h • {multiDayDetails.days[1].landmarks.length} landmarks</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Package Type:</span>
+                                <span className="font-semibold">
+                                  {multiDayDetails.isFullPackage ? "2-Day Full Package" : "Hourly Rate"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between font-bold text-lg border-t pt-2">
+                                <span>Total ({bookingData.groupSize} people):</span>
+                                <span className="text-blue-600">₱{bookingData.totalPrice.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      ) : singleDayDetails ? (
+                        <>
+                          {/* Single Day Display */}
+                          <div className="space-y-6">
+                            <div className="text-center mb-6">
+                              <h3 className="text-2xl font-bold mb-2">Custom DIY Tour</h3>
+                              <p className="text-gray-600">
+                                {singleDayDetails.landmarks.length} landmarks • {Math.ceil(singleDayDetails.totalTime / 60)} hours
+                              </p>
+                            </div>
+
+                            {/* Interactive Map */}
+                            <div className="mb-6">
+                              <h4 className="font-semibold mb-3">Your Route</h4>
+                              <div className="h-64 rounded-lg overflow-hidden">
+                                <ItineraryMap
+                                  landmarks={[...cebuLandmarks, ...mountainLandmarks]}
+                                  selectedLandmarks={singleDayDetails.landmarks
+                                    .map(l => {
+                                      const found = [...cebuLandmarks, ...mountainLandmarks].find(cl => cl.id === l.id);
+                                      return found;
+                                    })
+                                    .filter(Boolean) as Landmark[]}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Landmarks List */}
+                            <div>
+                              <h4 className="font-semibold mb-3">Itinerary Details</h4>
+                              <div className="space-y-3">
+                                {singleDayDetails.landmarks
+                                  .sort((a, b) => a.order - b.order)
+                                  .map((landmark, index) => (
+                                    <div key={landmark.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                      <div className="flex-shrink-0">
+                                        <Badge className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center">
+                                          {landmark.order}
+                                        </Badge>
+                                      </div>
+                                      <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
+                                        <img
+                                          src={landmark.image}
+                                          alt={landmark.name}
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                      <div className="flex-grow">
+                                        <h5 className="font-semibold">{landmark.name}</h5>
+                                        <p className="text-sm text-gray-600">
+                                          ~{landmark.duration} minutes visit
+                                        </p>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            </div>
+
+                            {/* Pricing Summary */}
+                            <div className="bg-blue-50 p-4 rounded-lg">
+                              <h4 className="font-semibold mb-2">Pricing Summary</h4>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex justify-between">
+                                  <span>Package Type:</span>
+                                  <span className="font-semibold">
+                                    {singleDayDetails.isFullPackage ? "Full Package Deal" : "Hourly Rate"}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Total Duration:</span>
+                                  <span>{Math.ceil(singleDayDetails.totalTime / 60)} hours</span>
+                                </div>
+                                <div className="flex justify-between font-bold text-lg">
+                                  <span>Price per person:</span>
+                                  <span className="text-blue-600">₱{singleDayDetails.totalPrice.toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between font-bold text-lg border-t pt-2">
+                                  <span>Total ({bookingData.groupSize} people):</span>
+                                  <span className="text-blue-600">₱{bookingData.totalPrice.toLocaleString()}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </>
+                      ) : null}
+                    </>
+                  ) : bookingData.bookingType === "tour" && tour ? (
                     <div className="space-y-4">
                       <div className="flex flex-col md:flex-row gap-4">
                         <img
@@ -357,7 +581,7 @@ export default function BookingConfirmationPage() {
               </Card>
 
               {/* Special Requests */}
-              {bookingData.specialRequests && (
+              {bookingData.specialRequests && !isCustomTour(bookingData) && (
                 <Card className="mt-8">
                   <CardHeader>
                     <CardTitle>Special Requests</CardTitle>
@@ -366,6 +590,27 @@ export default function BookingConfirmationPage() {
                     <p className="text-gray-700">{bookingData.specialRequests}</p>
                   </CardContent>
                 </Card>
+              )}
+
+              {/* For custom tours, extract and show only user-entered special requests */}
+              {isCustomTour(bookingData) && bookingData.specialRequests && (
+                (() => {
+                  const match = bookingData.specialRequests.match(/Additional Notes: (.+)/);
+                  const notes = match ? match[1].trim() : '';
+                  if (notes && notes !== 'None') {
+                    return (
+                      <Card className="mt-8">
+                        <CardHeader>
+                          <CardTitle>Special Requests</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <p className="text-gray-700">{notes}</p>
+                        </CardContent>
+                      </Card>
+                    );
+                  }
+                  return null;
+                })()
               )}
 
               {/* Action Buttons */}
