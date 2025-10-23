@@ -1,4 +1,5 @@
-import { Booking, ItineraryDetails, MultiDayItineraryDetails } from "@/types";
+import { ItineraryDetails, MultiDayItineraryDetails } from "@/types";
+import type { Booking } from "@/services/bookingService";
 
 /**
  * Type guard to check if a booking is a custom tour
@@ -162,6 +163,12 @@ export function getPricingBreakdownText(booking: Booking): string {
  */
 export function hasValidItinerary(booking: Booking): boolean {
   const itineraryDetails = parseItineraryDetails(booking);
-  return itineraryDetails !== null && itineraryDetails.landmarks.length > 0;
+  if (!itineraryDetails) return false;
+  if ((itineraryDetails as MultiDayItineraryDetails).days) {
+    const md = itineraryDetails as MultiDayItineraryDetails;
+    return Array.isArray(md.days) && md.days.some((d) => Array.isArray(d.landmarks) && d.landmarks.length > 0);
+  }
+  const sd = itineraryDetails as ItineraryDetails;
+  return Array.isArray(sd.landmarks) && sd.landmarks.length > 0;
 }
 
