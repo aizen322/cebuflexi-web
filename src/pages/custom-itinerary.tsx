@@ -328,21 +328,6 @@ export default function CustomItineraryPage() {
         itineraryDetailsPayload = itineraryDetails;
       }
 
-      // Create itinerary details for special requests (legacy format)
-      const itineraryDetailsText = (() => {
-        if (isTwoDays) {
-          return `Custom DIY Tour - 2 days\n` +
-            `Day 1: ${day1Landmarks.length} landmarks, ${Math.ceil(day1Minutes / 60)}h\n` +
-            `Day 2: ${day2Landmarks.length} landmarks, ${Math.ceil(day2Minutes / 60)}h\n` +
-            `Additional Notes: ${bookingData.specialRequests || 'None'}`;
-        }
-        return `Custom DIY Tour - ${selectedLandmarks.length} landmarks\n` +
-          `Full Package: ${isFullPackage ? 'Yes' : 'No'}\n` +
-          `Total Duration: ${Math.ceil(singleTotalTime / 60)} hours\n` +
-          `Landmarks: ${selectedLandmarks.map((l, i) => `\n${i + 1}. ${l.name}`).join('')}\n\n` +
-          `Additional Notes: ${bookingData.specialRequests || 'None'}`;
-      })();
-
       const booking: Omit<Booking, "id" | "createdAt"> = {
         userId: user.uid,
         userEmail: user.email || "",
@@ -356,7 +341,7 @@ export default function CustomItineraryPage() {
           ? calculateMultiDayPrice(day1Minutes, day2Minutes, false)
           : singleTotalPrice) * bookingData.groupSize,
         status: "pending",
-        specialRequests: itineraryDetailsText,
+        specialRequests: bookingData.specialRequests || '',
         itineraryDetails: JSON.stringify(itineraryDetailsPayload),
         contactPhone: bookingData.phone,
         phoneCountryCode: bookingData.phoneCountryCode,
