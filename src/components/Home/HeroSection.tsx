@@ -98,7 +98,7 @@ export function HeroSection() {
         </motion.p>
 
         <motion.div 
-          className="bg-white/10 backdrop-blur-md rounded-lg shadow-2xl p-6 max-w-4xl mx-auto"
+          className="bg-white/10 backdrop-blur-sm rounded-lg shadow-2xl p-3 max-w-4xl mx-auto"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
@@ -116,7 +116,7 @@ export function HeroSection() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onFocus={() => setShowSuggestions(true)}
                     onKeyPress={handleKeyPress}
-                    className="bg-white/10 border-0 text-white placeholder:text-white/70 pl-10 h-12 text-lg focus:bg-white/20 focus:border-0 focus:ring-0 transition-all duration-200"
+                    className="border-0 text-white placeholder:text-white/70 pl-10 h-12 text-2xl focus:bg-white/10 focus:focus:ring-0 transition-all duration-200"
                   />
                 </div>
                 
@@ -155,12 +155,6 @@ export function HeroSection() {
             </div>
           </div>
         </motion.div>
-      </div>
-
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-        <div className="w-6 h-10 border-2 border-white rounded-full flex items-start justify-center p-2">
-          <div className="w-1 h-3 bg-white rounded-full"></div>
-        </div>
       </div>
     </section>
   );
