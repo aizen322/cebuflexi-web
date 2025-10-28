@@ -43,7 +43,6 @@ export default function CarRentalsPage() {
     if (searchQuery.trim()) {
       const searchTerm = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(v => 
-        v.name.toLowerCase().includes(searchTerm) ||
         v.type.toLowerCase().includes(searchTerm)
       );
     }
@@ -119,7 +118,7 @@ export default function CarRentalsPage() {
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <Input
                           type="text"
-                          placeholder="Search by name or type..."
+                          placeholder="Search by type..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           className="pl-10"
@@ -211,7 +210,7 @@ export default function CarRentalsPage() {
                             <div className="md:w-1/3 h-64 md:h-auto relative">
                               <img
                                 src={vehicle.image}
-                                alt={`${vehicle.name} - Car rental in Cebu`}
+                                alt={`${vehicle.type} - Car rental in Cebu`}
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                               />
                               {vehicle.withDriver && (
@@ -226,8 +225,7 @@ export default function CarRentalsPage() {
                               <div>
                                 <div className="flex items-start justify-between mb-3">
                                   <div>
-                                    <h3 className="text-2xl font-bold mb-1 group-hover:text-blue-600 transition-colors duration-300">{vehicle.name}</h3>
-                                    <p className="text-gray-600">{vehicle.type}</p>
+                                    <h3 className="text-2xl font-bold mb-1 group-hover:text-blue-600 transition-colors duration-300">{vehicle.type}</h3>
                                   </div>
                                   <div className="text-right">
                                     <p className="text-3xl font-bold text-blue-600">₱{vehicle.pricePerDay.toLocaleString()}</p>

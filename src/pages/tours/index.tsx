@@ -5,6 +5,7 @@ import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { TourCard } from "@/components/Tours/TourCard";
 import { TourFilters } from "@/components/Tours/TourFilters";
+import { DIYTourCallout } from "@/components/Tours/DIYTourCallout";
 import { allTours } from "@/lib/mockData";
 import { Tour } from "@/types";
 
@@ -118,11 +119,18 @@ export default function ToursPage() {
                     <p className="text-xl text-gray-600">No tours match your filters. Try adjusting your criteria.</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {filteredTours.map((tour) => (
-                      <TourCard key={tour.id} tour={tour} />
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {filteredTours.map((tour) => (
+                        <TourCard key={tour.id} tour={tour} />
+                      ))}
+                    </div>
+                    
+                    {/* DIY Tour Callout */}
+                    <div className="mt-10">
+                      <DIYTourCallout />
+                    </div>
+                  </>
                 )}
               </div>
             </div>

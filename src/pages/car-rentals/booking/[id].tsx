@@ -213,8 +213,8 @@ export default function CarRentalBookingPage() {
   return (
     <>
       <Head>
-        <title>Book {vehicle.name} | Car Rental - CebuFlexi Tours</title>
-        <meta name="description" content={`Book ${vehicle.name} for your Cebu adventure. ${vehicle.type} rental with ${vehicle.capacity} seats.`} />
+        <title>Book {vehicle.type} | Car Rental - CebuFlexi Tours</title>
+        <meta name="description" content={`Book ${vehicle.type} for your Cebu adventure. ${vehicle.capacity} seats available.`} />
         <link rel="canonical" href={`https://cebuflexitours.com/car-rentals/booking/${vehicle.id}`} />
       </Head>
 
@@ -243,13 +243,12 @@ export default function CarRentalBookingPage() {
                       <div className="md:w-1/3">
                         <img
                           src={vehicle.image}
-                          alt={vehicle.name}
+                          alt={`${vehicle.type} rental`}
                           className="w-full h-48 object-cover rounded-lg"
                         />
                       </div>
                       <div className="md:w-2/3">
-                        <h1 className="text-3xl font-bold mb-2">{vehicle.name}</h1>
-                        <Badge className="mb-4">{vehicle.type}</Badge>
+                        <h1 className="text-3xl font-bold mb-2">{vehicle.type}</h1>
                         
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div className="flex items-center">

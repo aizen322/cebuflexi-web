@@ -511,12 +511,11 @@ export default function BookingConfirmationPage() {
                       <div className="flex flex-col md:flex-row gap-4">
                         <img
                           src={vehicle.image}
-                          alt={vehicle.name}
+                          alt={`${vehicle.type} rental`}
                           className="w-full md:w-48 h-32 object-cover rounded-lg"
                         />
                         <div className="flex-1">
-                          <h3 className="text-xl font-bold mb-2">{vehicle.name}</h3>
-                          <Badge className="mb-2">{vehicle.type}</Badge>
+                          <h3 className="text-xl font-bold mb-2">{vehicle.type}</h3>
                           <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                             <div className="flex items-center">
                               <Users className="h-4 w-4 mr-2 text-blue-600" />

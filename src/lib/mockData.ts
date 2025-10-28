@@ -282,8 +282,8 @@ export const allTours: Tour[] = [
 
 export const vehicles: Vehicle[] = [
   {
-    id: "toyota-vios",
-    name: "Toyota Vios",
+    id: "standard-sedan",
+    name: "Standard Sedan",
     type: "Sedan",
     image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&h=600&fit=crop",
     pricePerDay: 2000,
@@ -297,8 +297,8 @@ export const vehicles: Vehicle[] = [
     stockCount: 10,
   },
   {
-    id: "toyota-fortuner",
-    name: "Toyota Fortuner",
+    id: "standard-suv",
+    name: "Standard SUV",
     type: "SUV",
     image: "https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&h=600&fit=crop",
     pricePerDay: 3500,
@@ -312,8 +312,8 @@ export const vehicles: Vehicle[] = [
     stockCount: 5,
   },
   {
-    id: "toyota-hiace",
-    name: "Toyota Hiace Van",
+    id: "standard-van",
+    name: "Standard Van",
     type: "Van",
     image: "https://images.unsplash.com/photo-1527786356703-4b100091cd2c?w=800&h=600&fit=crop",
     pricePerDay: 4500,
