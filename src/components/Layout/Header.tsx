@@ -46,6 +46,7 @@ export function Header() {
       toast({
         title: "Successfully logged out!",
         description: "You have been signed out successfully.",
+        duration: 2000,
       });
       await logout();
     } catch (error) {

@@ -1,26 +1,48 @@
-import { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import Head from "next/head";
 
 export default function LoadingPage() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { toast } = useToast();
+  const [canRedirect, setCanRedirect] = React.useState(false);
+  const toastShown = useRef(false);
 
   useEffect(() => {
-    // If auth is loaded and user is authenticated, redirect to home after a brief delay
-    if (!loading && user) {
-      const timer = setTimeout(() => {
-        router.push("/");
-      }, 2500); // 2.5 second delay
+    // Set a flag that allows redirect only after 2 seconds from page load
+    const minDisplayTime = 1000; // 1 second
+    const timer = setTimeout(() => {
+      setCanRedirect(true);
+    }, minDisplayTime);
 
-      return () => clearTimeout(timer);
-    } else if (!loading && !user) {
-      // If user is not authenticated, redirect to home immediately
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Only redirect if minimum display time has passed and auth is loaded
+    if (canRedirect && !loading && user) {
+      // Show toast before redirecting
+      if (!toastShown.current) {
+        toast({
+          title: "Successfully signed in!",
+          description: "Welcome back to CebuFlexi Tours!",
+          duration: 2000,
+        });
+        toastShown.current = true;
+      }
+      // Small delay to let toast appear, then redirect
+      setTimeout(() => {
+        router.push("/");
+      }, 100);
+    } else if (canRedirect && !loading && !user) {
+      // If user is not authenticated, redirect without toast
       router.push("/");
     }
-  }, [user, loading, router]);
+  }, [canRedirect, loading, user, router, toast]);
 
   return (
     <>
