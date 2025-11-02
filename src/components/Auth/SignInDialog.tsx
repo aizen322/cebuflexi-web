@@ -12,6 +12,8 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/router";
 
 interface SignInDialogProps {
   open: boolean;
@@ -21,6 +23,8 @@ interface SignInDialogProps {
 
 export function SignInDialog({ open, onOpenChange, onSwitchToSignUp }: SignInDialogProps) {
   const { signIn, signInWithGoogle } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -39,9 +43,14 @@ export function SignInDialog({ open, onOpenChange, onSwitchToSignUp }: SignInDia
 
     try {
       await signIn(email, password);
+      toast({
+        title: "Successfully signed in!",
+        description: "Welcome back to CebuFlexi Tours!",
+      });
       onOpenChange(false);
       setEmail("");
       setPassword("");
+      router.push("/loading");
     } catch (err: any) {
       let errorMessage = "Failed to sign in. Please try again.";
       
@@ -71,7 +80,12 @@ export function SignInDialog({ open, onOpenChange, onSwitchToSignUp }: SignInDia
 
     try {
       await signInWithGoogle();
+      toast({
+        title: "Successfully signed in!",
+        description: "Welcome back to CebuFlexi Tours!",
+      });
       onOpenChange(false);
+      router.push("/loading");
     } catch (err: any) {
       let errorMessage = "Failed to sign in with Google. Please try again.";
       

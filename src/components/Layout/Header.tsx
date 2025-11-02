@@ -14,12 +14,14 @@ import {
 import { SignInDialog } from "@/components/Auth/SignInDialog";
 import { SignUpDialog } from "@/components/Auth/SignUpDialog";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [signInOpen, setSignInOpen] = useState(false);
   const [signUpOpen, setSignUpOpen] = useState(false);
   const { user, loading, logout } = useAuth();
+  const { toast } = useToast();
   const router = useRouter();
   const isHomePage = router.pathname === "/";
 
@@ -41,6 +43,10 @@ export function Header() {
 
   const handleLogout = async () => {
     try {
+      toast({
+        title: "Successfully logged out!",
+        description: "You have been signed out successfully.",
+      });
       await logout();
     } catch (error) {
       console.error("Logout failed:", error);
