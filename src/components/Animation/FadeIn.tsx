@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { ReactNode } from "react";
 
 interface FadeInProps {
@@ -16,7 +16,7 @@ export function FadeIn({
   direction = "up",
   className = "",
 }: FadeInProps) {
-  const variants = {
+  const variants: Variants = {
     hidden: {
       opacity: 0,
       x: direction === "left" ? -50 : direction === "right" ? 50 : 0,
@@ -29,7 +29,7 @@ export function FadeIn({
       transition: {
         delay,
         duration,
-        ease: "easeOut",
+        ease: [0.25, 0.1, 0.25, 1], // easeOut cubic bezier
       },
     },
   };
