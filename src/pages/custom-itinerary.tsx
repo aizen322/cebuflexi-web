@@ -1,6 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Mail, User, ArrowLeft } from "lucide-react";
 import { cebuLandmarks, mountainLandmarks } from "@/lib/mockData";
-import { Landmark, TourType, TourDuration, MultiDayItineraryDetails } from "@/types";
+import { Landmark, TourType, MultiDayItineraryDetails } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBooking, Booking, checkUserPendingBookings } from "@/services/bookingService";
 import { useToast } from "@/hooks/use-toast";
@@ -28,25 +28,16 @@ import { ItinerarySummary } from "@/components/CustomItinerary/ItinerarySummary"
 import { MultiDayItinerarySummary } from "@/components/CustomItinerary/MultiDayItinerarySummary";
 import { TourSelectionStep } from "@/components/CustomItinerary/TourSelectionStep";
 import { DayTabs } from "@/components/CustomItinerary/DayTabs";
+import { useItineraryState } from "@/hooks/useItineraryState";
 
 export default function CustomItineraryPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  // Step-based flow state
-  const [currentStep, setCurrentStep] = useState<"duration" | "tour-type" | "itinerary">("duration");
-  const [tourDuration, setTourDuration] = useState<TourDuration | null>(null);
-  const [day1TourType, setDay1TourType] = useState<TourType | null>(null);
-  const [day2TourType, setDay2TourType] = useState<TourType | null>(null);
-  const [currentDay, setCurrentDay] = useState<1 | 2>(1);
-
-  // Per-day selections
-  const [day1Landmarks, setDay1Landmarks] = useState<Landmark[]>([]);
-  const [day2Landmarks, setDay2Landmarks] = useState<Landmark[]>([]);
-
-  const [selectedLandmarks, setSelectedLandmarks] = useState<Landmark[]>([]);
-  const [isFullPackage, setIsFullPackage] = useState(false);
+  // Use optimized state management
+  const { state, dispatch, selectedLandmarks, canBook } =
+    useItineraryState();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookingData, setBookingData] = useState({
     name: "",
@@ -63,7 +54,7 @@ export default function CustomItineraryPage() {
   });
   const [isBooking, setIsBooking] = useState(false);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
-  const [validationData, setValidationData] = useState<any>(null);
+  const [validationData, setValidationData] = useState<unknown>(null);
 
   // Update form data when user is authenticated
   useEffect(() => {
@@ -76,93 +67,39 @@ export default function CustomItineraryPage() {
     }
   }, [user]);
 
-  // Sync selectedLandmarks view with current day
-  useEffect(() => {
-    if (tourDuration === "2-days") {
-      setSelectedLandmarks(currentDay === 1 ? day1Landmarks : day2Landmarks);
-    }
-  }, [currentDay]);
-
   const handleToggleLandmark = (landmark: Landmark) => {
-    // Determine target day list
-    if (tourDuration === "2-days") {
-      if (currentDay === 1) {
-        setDay1Landmarks(prev => {
-          const exists = prev.some(l => l.id === landmark.id);
-          const next = exists ? prev.filter(l => l.id !== landmark.id) : [...prev, landmark];
-          setSelectedLandmarks(next);
-          const available = day1TourType === "mountain" ? mountainLandmarks.length : cebuLandmarks.length;
-          // Auto apply full package per-day when all are selected
-          // Note: single-day is controlled by isFullPackage; per-day full-package only affects pricing via combined calc
-          // We won't mutate global isFullPackage here; pricing uses combined function
-          // But we may want to reflect UI toggle if all selected in single-day mode only
-          return next;
-        });
-      } else {
-        setDay2Landmarks(prev => {
-          const exists = prev.some(l => l.id === landmark.id);
-          const next = exists ? prev.filter(l => l.id !== landmark.id) : [...prev, landmark];
-          setSelectedLandmarks(next);
-          const available = day2TourType === "mountain" ? mountainLandmarks.length : cebuLandmarks.length;
-          return next;
-        });
-      }
-    } else {
-      setSelectedLandmarks(prev => {
-        const isSelected = prev.some(l => l.id === landmark.id);
-        if (isSelected) {
-          const filtered = prev.filter(l => l.id !== landmark.id);
-          if (isFullPackage && filtered.length < cebuLandmarks.length) {
-            setIsFullPackage(false);
-          }
-          return filtered;
-        } else {
-          const updated = [...prev, landmark];
-          if (updated.length === cebuLandmarks.length) {
-            setIsFullPackage(true);
-          }
-          return updated;
-        }
-      });
-    }
+    dispatch({ type: "TOGGLE_LANDMARK", payload: { landmark } });
   };
 
   const handleSelectAll = () => {
-    if (tourDuration === "2-days") {
-      const source = currentDay === 1 ? (day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks) : (day2TourType === "mountain" ? mountainLandmarks : cebuLandmarks);
-      const list = [...source];
-      if (currentDay === 1) setDay1Landmarks(list);
-      else setDay2Landmarks(list);
-      setSelectedLandmarks(list);
-      setIsFullPackage(false); // full package applies to single-day selection
+    if (state.tourDuration === "2-days") {
+      const source =
+        state.currentDay === 1
+          ? state.day1TourType === "mountain"
+            ? mountainLandmarks
+            : cebuLandmarks
+          : state.day2TourType === "mountain"
+          ? mountainLandmarks
+          : cebuLandmarks;
+      dispatch({ type: "SELECT_ALL", payload: { landmarks: [...source] } });
       return;
     }
-    if (isFullPackage) {
-      setSelectedLandmarks([]);
-      setIsFullPackage(false);
+
+    if (state.isFullPackage) {
+      dispatch({ type: "SELECT_ALL", payload: { landmarks: [] } });
     } else {
-      // For single-day, select all landmarks based on selected tour type
-      const source = day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks;
-      setSelectedLandmarks([...source]);
-      setIsFullPackage(true);
+      const source =
+        state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks;
+      dispatch({ type: "SELECT_ALL", payload: { landmarks: [...source] } });
     }
   };
 
   const handleReorder = (reorderedLandmarks: Landmark[]) => {
-    if (tourDuration === "2-days") {
-      if (currentDay === 1) setDay1Landmarks(reorderedLandmarks);
-      else setDay2Landmarks(reorderedLandmarks);
-    }
-    setSelectedLandmarks(reorderedLandmarks);
+    dispatch({ type: "REORDER_LANDMARKS", payload: { landmarks: reorderedLandmarks } });
   };
 
   const handleRemoveLandmark = (landmark: Landmark) => {
-    if (tourDuration === "2-days") {
-      if (currentDay === 1) setDay1Landmarks(prev => prev.filter(l => l.id !== landmark.id));
-      else setDay2Landmarks(prev => prev.filter(l => l.id !== landmark.id));
-    }
-    setSelectedLandmarks(prev => prev.filter(l => l.id !== landmark.id));
-    if (isFullPackage) setIsFullPackage(false);
+    dispatch({ type: "REMOVE_LANDMARK", payload: { landmarkId: landmark.id } });
   };
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
@@ -188,9 +125,9 @@ export default function CustomItineraryPage() {
     }
 
     // 2-Day Tour Validation
-    if (tourDuration === "2-days") {
-      if (day1Landmarks.length === 0 || day2Landmarks.length === 0) {
-        const missingDay = day1Landmarks.length === 0 ? "Day 1" : "Day 2";
+    if (state.tourDuration === "2-days") {
+      if (state.day1Landmarks.length === 0 || state.day2Landmarks.length === 0) {
+        const missingDay = state.day1Landmarks.length === 0 ? "Day 1" : "Day 2";
         toast({
           title: "Incomplete Itinerary",
           description: `Please select at least one landmark for ${missingDay} before booking.`,
@@ -281,14 +218,14 @@ export default function CustomItineraryPage() {
 
     try {
       // Single-day vs Multi-day
-      const isTwoDays = tourDuration === "2-days";
-      const day1Minutes = calculateTotalTime(day1Landmarks);
-      const day2Minutes = calculateTotalTime(day2Landmarks);
+      const isTwoDays = state.tourDuration === "2-days";
+      const day1Minutes = calculateTotalTime(state.day1Landmarks);
+      const day2Minutes = calculateTotalTime(state.day2Landmarks);
       const singleTotalTime = calculateTotalTime(selectedLandmarks);
-      const singleTotalPrice = calculatePrice(singleTotalTime, isFullPackage);
+      const singleTotalPrice = calculatePrice(singleTotalTime, state.isFullPackage);
 
-      let itineraryDetailsPayload: any;
-      if (isTwoDays && day1TourType && day2TourType) {
+      let itineraryDetailsPayload: MultiDayItineraryDetails | ItineraryDetails;
+      if (isTwoDays && state.day1TourType && state.day2TourType) {
         const dayPlan = (day: 1 | 2, tourType: TourType, list: Landmark[], minutes: number) => ({
           day,
           tourType,
@@ -305,8 +242,8 @@ export default function CustomItineraryPage() {
         const details: MultiDayItineraryDetails = {
           duration: "2-days",
           days: [
-            dayPlan(1, day1TourType, day1Landmarks, day1Minutes),
-            dayPlan(2, day2TourType, day2Landmarks, day2Minutes),
+            dayPlan(1, state.day1TourType, state.day1Landmarks, day1Minutes),
+            dayPlan(2, state.day2TourType, state.day2Landmarks, day2Minutes),
           ],
           totalPrice: calculateMultiDayPrice(day1Minutes, day2Minutes, false),
           isFullPackage: false,
@@ -323,7 +260,7 @@ export default function CustomItineraryPage() {
           })),
           totalTime: singleTotalTime,
           totalPrice: singleTotalPrice,
-          isFullPackage
+          isFullPackage: state.isFullPackage
         };
         itineraryDetailsPayload = itineraryDetails;
       }
@@ -347,8 +284,8 @@ export default function CustomItineraryPage() {
         phoneCountryCode: bookingData.phoneCountryCode,
         customizations: JSON.stringify({
           landmarks: selectedLandmarks.map(l => l.id),
-          isFullPackage,
-          totalTime
+          isFullPackage: state.isFullPackage,
+          totalTime: singleTotalTime
         }),
         ...(bookingData.bookingType === "guest" && {
           guestName: bookingData.guestName,
@@ -378,8 +315,7 @@ export default function CustomItineraryPage() {
         guestPhoneCountryCode: "PH"
       });
       setSelectedDate(undefined);
-      setSelectedLandmarks([]);
-      setIsFullPackage(false);
+      dispatch({ type: "RESET" });
 
     } catch (error) {
       console.error("Booking error:", error);
@@ -393,11 +329,23 @@ export default function CustomItineraryPage() {
     }
   };
 
-  // Totals
-  const totalTime = calculateTotalTime(selectedLandmarks);
-  const totalPrice = calculatePrice(totalTime, isFullPackage);
-  const day1Time = calculateTotalTime(day1Landmarks);
-  const day2Time = calculateTotalTime(day2Landmarks);
+  // Totals - memoized for performance
+  const totalTime = useMemo(
+    () => calculateTotalTime(selectedLandmarks),
+    [selectedLandmarks]
+  );
+  const totalPrice = useMemo(
+    () => calculatePrice(totalTime, state.isFullPackage),
+    [totalTime, state.isFullPackage]
+  );
+  const day1Time = useMemo(
+    () => calculateTotalTime(state.day1Landmarks),
+    [state.day1Landmarks]
+  );
+  const day2Time = useMemo(
+    () => calculateTotalTime(state.day2Landmarks),
+    [state.day2Landmarks]
+  );
 
   return (
     <>
@@ -429,21 +377,18 @@ export default function CustomItineraryPage() {
               </p>
             </div>
 
-            {currentStep !== "itinerary" && (
+            {state.currentStep !== "itinerary" && (
               <div className="bg-white rounded-lg p-6 mb-8">
                 <TourSelectionStep
-                  step={currentStep === "duration" ? "duration" : "tour-type"}
-                  tourDuration={tourDuration}
-                  day1TourType={day1TourType}
-                  day2TourType={day2TourType}
-                  onDurationSelect={(d) => {
-                    setTourDuration(d);
-                    setCurrentStep("tour-type");
-                  }}
-                  onDay1TourTypeSelect={(t) => setDay1TourType(t)}
-                  onDay2TourTypeSelect={(t) => setDay2TourType(t)}
-                  onContinue={() => setCurrentStep("itinerary")}
-                  onBack={() => setCurrentStep("duration")}
+                  step={state.currentStep === "duration" ? "duration" : "tour-type"}
+                  tourDuration={state.tourDuration}
+                  day1TourType={state.day1TourType}
+                  day2TourType={state.day2TourType}
+                  onDurationSelect={(d) => dispatch({ type: "SET_DURATION", payload: d })}
+                  onDay1TourTypeSelect={(t) => dispatch({ type: "SET_DAY1_TOUR_TYPE", payload: t })}
+                  onDay2TourTypeSelect={(t) => dispatch({ type: "SET_DAY2_TOUR_TYPE", payload: t })}
+                  onContinue={() => dispatch({ type: "SET_STEP", payload: "itinerary" })}
+                  onBack={() => dispatch({ type: "SET_STEP", payload: "duration" })}
                 />
               </div>
             )}
@@ -451,21 +396,11 @@ export default function CustomItineraryPage() {
             {/* Removed redundant change selection summary bar */}
 
             {/* Back to Tour Selection Button */}
-            {currentStep === "itinerary" && (
+            {state.currentStep === "itinerary" && (
               <div className="mb-4">
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    setCurrentStep("duration");
-                    // Reset selections
-                    setTourDuration(null);
-                    setDay1TourType(null);
-                    setDay2TourType(null);
-                    setDay1Landmarks([]);
-                    setDay2Landmarks([]);
-                    setSelectedLandmarks([]);
-                    setIsFullPackage(false);
-                  }}
+                  onClick={() => dispatch({ type: "RESET" })}
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Tour Selection
@@ -474,66 +409,66 @@ export default function CustomItineraryPage() {
             )}
 
             {/* Conditional Content - Only show when in itinerary step */}
-            {currentStep === "itinerary" && (
+            {state.currentStep === "itinerary" && (
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Left Column - Tour Builder */}
               <div className="lg:col-span-2 space-y-8">
-                {currentStep === "itinerary" && tourDuration === "2-days" && day1TourType && day2TourType && (
+                {state.currentStep === "itinerary" && state.tourDuration === "2-days" && state.day1TourType && state.day2TourType && (
                   <div className="bg-white rounded-lg p-4">
                     <DayTabs
-                      currentDay={currentDay}
-                      day1TourType={day1TourType}
-                      day2TourType={day2TourType}
-                      day1LandmarkCount={day1Landmarks.length}
-                      day2LandmarkCount={day2Landmarks.length}
-                      onDayChange={setCurrentDay}
+                      currentDay={state.currentDay}
+                      day1TourType={state.day1TourType}
+                      day2TourType={state.day2TourType}
+                      day1LandmarkCount={state.day1Landmarks.length}
+                      day2LandmarkCount={state.day2Landmarks.length}
+                      onDayChange={(day) => dispatch({ type: "SET_CURRENT_DAY", payload: day })}
                     />
                   </div>
                 )}
                 {/* Interactive Map */}
                 <div className="bg-white rounded-lg p-6">
                   <h2 className="text-2xl font-bold mb-4">Interactive Route Map</h2>
-                  {tourDuration === "1-day" && day1TourType ? (
+                  {state.tourDuration === "1-day" && state.day1TourType ? (
                     <ItineraryMap
-                      landmarks={day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks}
+                      landmarks={state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks}
                       selectedLandmarks={selectedLandmarks}
                     />
-                  ) : tourDuration === "2-days" ? (
+                  ) : state.tourDuration === "2-days" ? (
                     <ItineraryMap
                       landmarks={
-                        currentDay === 1 
-                          ? (day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
-                          : (day2TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
+                        state.currentDay === 1 
+                          ? (state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
+                          : (state.day2TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
                       }
                       selectedLandmarks={selectedLandmarks}
-                      markerColor={currentDay === 1 ? "blue" : "green"}
+                      markerColor={state.currentDay === 1 ? "blue" : "green"}
                     />
                   ) : null}
                 </div>
 
                 {/* Landmark Selector */}
                 <div className="bg-white rounded-lg p-6">
-                  {tourDuration === "1-day" && day1TourType ? (
+                  {state.tourDuration === "1-day" && state.day1TourType ? (
                     <LandmarkSelector
-                      landmarks={day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks}
+                      landmarks={state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks}
                       selectedLandmarks={selectedLandmarks}
                       onToggleLandmark={handleToggleLandmark}
                       onSelectAll={handleSelectAll}
-                      isAllSelected={isFullPackage}
-                      tourType={day1TourType}
+                      isAllSelected={state.isFullPackage}
+                      tourType={state.day1TourType}
                     />
-                  ) : tourDuration === "2-days" ? (
+                  ) : state.tourDuration === "2-days" ? (
                     <LandmarkSelector
                       landmarks={
-                        currentDay === 1 
-                          ? (day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
-                          : (day2TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
+                        state.currentDay === 1 
+                          ? (state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
+                          : (state.day2TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
                       }
                       selectedLandmarks={selectedLandmarks}
                       onToggleLandmark={handleToggleLandmark}
                       onSelectAll={handleSelectAll}
                       isAllSelected={false}
-                      tourType={currentDay === 1 ? day1TourType! : day2TourType!}
+                      tourType={(state.currentDay === 1 ? state.day1TourType : state.day2TourType) || "cebu-city"}
                     />
                   ) : null}
                 </div>
@@ -552,16 +487,16 @@ export default function CustomItineraryPage() {
               <div className="lg:col-span-1">
                 <div className="sticky top-24 space-y-6">
                   {/* Summary */}
-                  {tourDuration === "2-days" ? (
+                  {state.tourDuration === "2-days" ? (
                     <MultiDayItinerarySummary
-                      day1={{ landmarks: day1Landmarks, minutes: day1Time, isFullPackage: false }}
-                      day2={{ landmarks: day2Landmarks, minutes: day2Time, isFullPackage: false }}
+                      day1={{ landmarks: state.day1Landmarks, minutes: day1Time, isFullPackage: false }}
+                      day2={{ landmarks: state.day2Landmarks, minutes: day2Time, isFullPackage: false }}
                       groupSize={bookingData.groupSize}
                     />
                   ) : (
                     <ItinerarySummary
                       selectedLandmarks={selectedLandmarks}
-                      isFullPackage={isFullPackage}
+                      isFullPackage={state.isFullPackage}
                     />
                   )}
 
@@ -569,10 +504,10 @@ export default function CustomItineraryPage() {
                   <Card>
                     <CardHeader>
                       <CardTitle>Book Your Custom Tour</CardTitle>
-                      {((tourDuration === "2-days" && (day1Landmarks.length > 0 || day2Landmarks.length > 0)) || (tourDuration !== "2-days" && selectedLandmarks.length > 0)) && (
+                      {((state.tourDuration === "2-days" && (state.day1Landmarks.length > 0 || state.day2Landmarks.length > 0)) || (state.tourDuration !== "2-days" && selectedLandmarks.length > 0)) && (
                         <div className="text-3xl font-bold text-blue-600">
-                          ₱{((tourDuration === "2-days" 
-                            ? calculateMultiDayPrice(day1Time, day2Time, isFullPackage)
+                          ₱{((state.tourDuration === "2-days" 
+                            ? calculateMultiDayPrice(day1Time, day2Time, state.isFullPackage)
                             : totalPrice) * bookingData.groupSize).toLocaleString()}
                           <span className="text-sm text-gray-500 font-normal ml-2">
                             total for {bookingData.groupSize} {bookingData.groupSize === 1 ? 'person' : 'people'}
@@ -589,7 +524,7 @@ export default function CustomItineraryPage() {
                         </div>
                       )}
 
-                      {(tourDuration !== "2-days" && selectedLandmarks.length === 0) && (
+                      {(state.tourDuration !== "2-days" && selectedLandmarks.length === 0) && (
                         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                           <p className="text-sm text-blue-800">
                             <strong>Get started:</strong> Select landmarks above to begin building your itinerary.
@@ -598,7 +533,7 @@ export default function CustomItineraryPage() {
                       )}
 
                       {/* 2-Day Validation Warning */}
-                      {tourDuration === "2-days" && (day1Landmarks.length === 0 || day2Landmarks.length === 0) && (
+                      {state.tourDuration === "2-days" && (state.day1Landmarks.length === 0 || state.day2Landmarks.length === 0) && (
                         <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                           <p className="text-sm text-amber-800">
                             <strong>⚠️ Action Required:</strong> Please select landmarks for both Day 1 and Day 2 to proceed with booking.
@@ -776,11 +711,7 @@ export default function CustomItineraryPage() {
                           type="submit"
                           className="w-full bg-blue-600 hover:bg-blue-700"
                           size="lg"
-                          disabled={isBooking || authLoading || (
-                            tourDuration === "2-days" 
-                              ? (day1Landmarks.length === 0 && day2Landmarks.length === 0)
-                              : selectedLandmarks.length === 0
-                          )}
+                          disabled={isBooking || authLoading || !canBook}
                         >
                           {isBooking ? "Processing..." : "Book Now"}
                         </Button>
@@ -807,11 +738,11 @@ export default function CustomItineraryPage() {
           setShowValidationDialog(false);
           proceedWithBooking();
         }}
-        hasPending={validationData?.hasPending || false}
-        hasConfirmed={validationData?.hasConfirmed || false}
-        pendingCount={validationData?.pendingCount || 0}
-        confirmedCount={validationData?.confirmedCount || 0}
-        bookings={validationData?.bookings || []}
+        hasPending={(validationData as any)?.hasPending || false}
+        hasConfirmed={(validationData as any)?.hasConfirmed || false}
+        pendingCount={(validationData as any)?.pendingCount || 0}
+        confirmedCount={(validationData as any)?.confirmedCount || 0}
+        bookings={(validationData as any)?.bookings || []}
       />
     </>
   );

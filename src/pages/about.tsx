@@ -10,33 +10,6 @@ import { FadeIn } from "@/components/Animation/FadeIn";
 import { StaggerContainer, staggerItem } from "@/components/Animation/StaggerContainer";
 
 export default function AboutPage() {
-  const team = [
-    {
-      name: "Maria Santos",
-      role: "Founder & Lead Guide",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
-      bio: "Born and raised in Cebu, Maria has 15+ years of experience showcasing the beauty of her homeland."
-    },
-    {
-      name: "Carlos Reyes",
-      role: "Operations Manager",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop",
-      bio: "Logistics expert ensuring every tour runs smoothly. DOT-certified with a passion for sustainable tourism."
-    },
-    {
-      name: "Ana Cruz",
-      role: "Cultural Heritage Guide",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
-      bio: "Historian specializing in Cebu's Spanish colonial past and indigenous Visayan culture."
-    },
-    {
-      name: "Diego Mendoza",
-      role: "Adventure Tour Specialist",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop",
-      bio: "Marine biologist and certified dive master leading our water-based adventures."
-    }
-  ];
-
   const values = [
     {
       icon: <Heart className="h-8 w-8" />,
@@ -128,41 +101,6 @@ export default function AboutPage() {
                         </div>
                         <h3 className="text-xl font-bold mb-3 group-hover:text-blue-600 transition-colors duration-300">{value.title}</h3>
                         <p className="text-gray-600">{value.description}</p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-            </StaggerContainer>
-          </div>
-        </section>
-
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4">
-            <FadeIn>
-              <div className="text-center mb-12">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Meet Our Team</h2>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                  Local experts passionate about sharing Cebu's wonders with the world
-                </p>
-              </div>
-            </FadeIn>
-            <StaggerContainer>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                {team.map((member, idx) => (
-                  <motion.div key={idx} variants={staggerItem}>
-                    <Card className="overflow-hidden hover:shadow-xl transition-shadow group">
-                      <div className="relative h-64">
-                        <img
-                          src={member.image}
-                          alt={`${member.name} - ${member.role}`}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      </div>
-                      <CardContent className="p-6">
-                        <h3 className="text-xl font-bold mb-1 group-hover:text-blue-600 transition-colors duration-300">{member.name}</h3>
-                        <p className="text-blue-600 font-semibold mb-3">{member.role}</p>
-                        <p className="text-gray-600 text-sm">{member.bio}</p>
                       </CardContent>
                     </Card>
                   </motion.div>

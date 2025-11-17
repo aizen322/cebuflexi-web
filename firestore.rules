@@ -17,8 +17,15 @@ service cloud.firestore {
         request.auth.token.role == role;
     }
     
+    // Check if user has admin role in Firestore (fallback if custom claim not set)
+    function hasAdminInFirestore() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    
     function isAdmin() {
-      return hasRole('admin');
+      return hasRole('admin') || hasAdminInFirestore();
     }
     
     function isModerator() {
@@ -51,6 +58,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if isOwner(userId);
       allow read: if isModerator();
+      allow read: if isAdmin(); // Allow admins to read all users
+      allow list: if isAdmin() || isModerator(); // Allow admins to list all users
       
       // Validate user data
       allow create, update: if isOwner(userId) &&
@@ -63,11 +72,25 @@ service cloud.firestore {
     
     // Bookings collection
     match /bookings/{bookingId} {
-      allow read: if isOwner(resource.data.userId) || isModerator();
+      allow read: if isOwner(resource.data.userId) || isModerator() || isAdmin();
+      // Allow authenticated users to list bookings (code must filter by userId)
+      // Admins can list all, regular users should only query their own
+      allow list: if isAuthenticated();
+      // Simplified create rule for debugging - will tighten after testing
       allow create: if isAuthenticated() &&
         request.auth.uid == request.resource.data.userId &&
-        isValidBookingData(request.resource.data);
-      allow update: if isOwner(resource.data.userId) || isModerator();
+        request.resource.data.keys().hasAll(['userId', 'userEmail', 'userName', 'bookingType', 'startDate', 'endDate', 'totalPrice', 'status']) &&
+        request.resource.data.userId is string &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.userEmail is string &&
+        request.resource.data.userName is string &&
+        request.resource.data.bookingType in ['tour', 'vehicle', 'custom-tour'] &&
+        request.resource.data.startDate is timestamp &&
+        request.resource.data.endDate is timestamp &&
+        request.resource.data.totalPrice is number &&
+        request.resource.data.totalPrice >= 0 &&
+        request.resource.data.status in ['pending', 'confirmed', 'cancelled', 'completed'];
+      allow update: if isOwner(resource.data.userId) || isModerator() || isAdmin();
       allow delete: if isOwner(resource.data.userId) || isAdmin();
       
       function isValidBookingData(data) {
@@ -80,20 +103,29 @@ service cloud.firestore {
         isValidEmail(data.userEmail) &&
         data.userName is string &&
         data.userName.size() <= 100 &&
-        data.bookingType in ['tour', 'vehicle'] &&
+        data.bookingType in ['tour', 'vehicle', 'custom-tour'] &&
         isValidDate(data.startDate) &&
         isValidDate(data.endDate) &&
         data.startDate <= data.endDate &&
         isValidPrice(data.totalPrice) &&
         data.status in ['pending', 'confirmed', 'cancelled', 'completed'] &&
         (data.groupSize == null || isValidGroupSize(data.groupSize)) &&
-        (data.contactPhone == null || isValidPhone(data.contactPhone)) &&
-        (data.specialRequests == null || 
+        (data.guests == null || isValidGroupSize(data.guests)) &&
+        (data.contactPhone == null || data.contactPhone == '' || isValidPhone(data.contactPhone)) &&
+        (data.phoneCountryCode == null || data.phoneCountryCode == '' || data.phoneCountryCode is string) &&
+        (data.specialRequests == null || data.specialRequests == '' || 
           (data.specialRequests is string && data.specialRequests.size() <= 1000)) &&
-        (data.guestName == null || 
+        (data.customizations == null || data.customizations == '' || 
+          (data.customizations is string && data.customizations.size() <= 2000)) &&
+        (data.itineraryDetails == null || data.itineraryDetails == '' || 
+          (data.itineraryDetails is string && data.itineraryDetails.size() <= 5000)) &&
+        (data.guestName == null || data.guestName == '' || 
           (data.guestName is string && data.guestName.size() <= 100)) &&
-        (data.guestEmail == null || isValidEmail(data.guestEmail)) &&
-        (data.guestPhone == null || isValidPhone(data.guestPhone));
+        (data.guestEmail == null || data.guestEmail == '' || isValidEmail(data.guestEmail)) &&
+        (data.guestPhone == null || data.guestPhone == '' || isValidPhone(data.guestPhone)) &&
+        (data.guestPhoneCountryCode == null || data.guestPhoneCountryCode == '' || data.guestPhoneCountryCode is string) &&
+        (data.tourId == null || data.tourId == '' || data.tourId is string) &&
+        (data.vehicleId == null || data.vehicleId == '' || data.vehicleId is string);
       }
     }
     
@@ -221,6 +253,30 @@ service cloud.firestore {
     // System settings collection (admin only)
     match /settings/{settingId} {
       allow read: if isModerator();
+      allow write: if isAdmin();
+    }
+    
+    // Site settings collection (admin only)
+    match /siteSettings/{settingId} {
+      allow read: if true; // Public can read site settings
+      allow write: if isAdmin();
+    }
+    
+    // Landmarks collection (admin write, public read)
+    match /landmarks/{landmarkId} {
+      allow read: if true; // Public read access for custom tours
+      allow write: if isAdmin();
+    }
+    
+    // Blog posts collection (admin write, public read)
+    match /blogPosts/{postId} {
+      allow read: if true; // Public read access
+      allow write: if isAdmin();
+    }
+    
+    // Stats collection (admin only - for cached dashboard statistics)
+    match /stats/{statId} {
+      allow read: if isAdmin();
       allow write: if isAdmin();
     }
     

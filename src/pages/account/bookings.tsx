@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/router";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
@@ -23,59 +23,33 @@ import {
   User
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getUserBookings, cancelBooking, Booking } from "@/services/bookingService";
+import { cancelBooking, Booking } from "@/services/bookingService";
 import { allTours } from "@/lib/mockData";
 import { vehicles } from "@/lib/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
 import { parseItineraryDetails, isCustomTour, getFirstLandmarkImage, getItinerarySummary, getLandmarkNames } from "@/lib/customTourHelpers";
+import { usePaginatedBookings } from "@/hooks/usePaginatedBookings";
 
 export default function UserBookingsPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  useEffect(() => {
-    if (user) {
-      fetchBookings();
-    }
-  }, [user]);
+  const filters = useMemo(
+    () => ({
+      userId: user?.uid,
+      status: statusFilter,
+    }),
+    [user?.uid, statusFilter]
+  );
 
-  useEffect(() => {
-    filterBookings();
-  }, [bookings, statusFilter]);
-
-  const fetchBookings = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      const userBookings = await getUserBookings(user.uid);
-      setBookings(userBookings);
-    } catch (error) {
-      console.error("Error fetching bookings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load your bookings. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterBookings = () => {
-    if (statusFilter === "all") {
-      setFilteredBookings(bookings);
-    } else {
-      setFilteredBookings(bookings.filter(booking => booking.status === statusFilter));
-    }
-  };
+  const { bookings, loading, hasMore, loadMore, refresh } = usePaginatedBookings(
+    filters,
+    false
+  );
 
   const handleCancelBooking = async (bookingId: string) => {
     if (!confirm("Are you sure you want to cancel this booking?")) {
@@ -88,7 +62,7 @@ export default function UserBookingsPage() {
         title: "Booking Cancelled",
         description: "Your booking has been cancelled successfully.",
       });
-      fetchBookings(); // Refresh the bookings list
+      refresh(); // Refresh the bookings list
     } catch (error) {
       console.error("Error cancelling booking:", error);
       toast({
@@ -186,7 +160,7 @@ export default function UserBookingsPage() {
               </Select>
             </div>
 
-            {filteredBookings.length === 0 ? (
+            {bookings.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
                   <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -203,8 +177,9 @@ export default function UserBookingsPage() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-6">
-                {filteredBookings.map((booking) => {
+              <>
+                <div className="space-y-6">
+                  {bookings.map((booking) => {
                   const item = getBookingItem(booking);
                   if (!item) return null;
 
@@ -524,6 +499,27 @@ export default function UserBookingsPage() {
                   );
                 })}
               </div>
+
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="mt-6 text-center">
+                  <Button
+                    onClick={loadMore}
+                    variant="outline"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Load More Bookings"
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
             )}
           </div>
         </section>

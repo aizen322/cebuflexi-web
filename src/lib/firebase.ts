@@ -1,7 +1,7 @@
 
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getAuth, Auth } from "firebase/auth";
-import { getFirestore, Firestore } from "firebase/firestore";
+import { getFirestore, Firestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
@@ -28,6 +28,15 @@ if (typeof window !== "undefined") {
   auth = getAuth(app);
   db = getFirestore(app);
   storage = getStorage(app);
+
+  // Only connect to emulator in development if explicitly enabled
+  if (process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_USE_FIRESTORE_EMULATOR === "true") {
+    try {
+      connectFirestoreEmulator(db, "localhost", 8080);
+    } catch (error) {
+      // Emulator already connected, ignore
+    }
+  }
 }
 
 export { auth, db, storage };

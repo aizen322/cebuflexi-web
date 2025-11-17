@@ -13,6 +13,7 @@ import {
   orderBy,
   Timestamp,
 } from "firebase/firestore";
+import { transformBookingDoc, transformBookingDocs } from "@/lib/bookingTransformers";
 
 export interface Booking {
   id?: string;
@@ -45,16 +46,41 @@ export const createBooking = async (bookingData: Omit<Booking, "id" | "createdAt
   if (!db) {
     throw new Error("Firestore database not initialized");
   }
-  const bookingsCollection = collection(db, "bookings");
-  const docRef = await addDoc(bookingsCollection, {
-    ...bookingData,
-    status: bookingData.status || "pending",
-    createdAt: Timestamp.now(),
-    updatedAt: Timestamp.now(),
-    startDate: Timestamp.fromDate(bookingData.startDate),
-    endDate: Timestamp.fromDate(bookingData.endDate),
-  });
-  return docRef.id;
+  
+  try {
+    const bookingsCollection = collection(db, "bookings");
+    const docRef = await addDoc(bookingsCollection, {
+      ...bookingData,
+      status: bookingData.status || "pending",
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+      startDate: Timestamp.fromDate(bookingData.startDate),
+      endDate: Timestamp.fromDate(bookingData.endDate),
+    });
+    return docRef.id;
+  } catch (error: any) {
+    console.error("Booking creation error:", error);
+    console.error("Booking data:", {
+      userId: bookingData.userId,
+      userEmail: bookingData.userEmail,
+      userName: bookingData.userName,
+      bookingType: bookingData.bookingType,
+      startDate: bookingData.startDate,
+      endDate: bookingData.endDate,
+      totalPrice: bookingData.totalPrice,
+      status: bookingData.status || "pending",
+    });
+    
+    if (error.code === "permission-denied") {
+      throw new Error(
+        "Permission denied. Please ensure:\n" +
+        "1. You are logged in\n" +
+        "2. Firestore rules are deployed\n" +
+        "3. Your account has proper permissions"
+      );
+    }
+    throw error;
+  }
 };
 
 export const getBookingById = async (bookingId: string) => {
@@ -68,14 +94,7 @@ export const getBookingById = async (bookingId: string) => {
     return null;
   }
   
-  const data = bookingDoc.data();
-  return {
-    id: bookingDoc.id,
-    ...data,
-    startDate: data.startDate.toDate(),
-    endDate: data.endDate.toDate(),
-    createdAt: data.createdAt.toDate(),
-  } as Booking;
+  return transformBookingDoc(bookingDoc);
 };
 
 export const getUserBookings = async (userId: string) => {
@@ -89,13 +108,7 @@ export const getUserBookings = async (userId: string) => {
     orderBy("createdAt", "desc")
   );
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    startDate: doc.data().startDate.toDate(),
-    endDate: doc.data().endDate.toDate(),
-    createdAt: doc.data().createdAt.toDate(),
-  })) as Booking[];
+  return transformBookingDocs(querySnapshot.docs);
 };
 
 export const updateBookingStatus = async (
@@ -132,13 +145,7 @@ export const checkUserPendingBookings = async (userId: string) => {
   );
   
   const querySnapshot = await getDocs(q);
-  const bookings = querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-    startDate: doc.data().startDate.toDate(),
-    endDate: doc.data().endDate.toDate(),
-    createdAt: doc.data().createdAt.toDate(),
-  })) as Booking[];
+  const bookings = transformBookingDocs(querySnapshot.docs);
   
   return {
     hasPending: bookings.some(b => b.status === "pending"),
@@ -153,11 +160,5 @@ export const getAllBookings = async () => {
   const bookingsCollection = collection(db, "bookings");
   const q = query(bookingsCollection, orderBy("createdAt", "desc"));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-    startDate: doc.data().startDate.toDate(),
-    endDate: doc.data().endDate.toDate(),
-    createdAt: doc.data().createdAt.toDate(),
-  })) as Booking[];
+  return transformBookingDocs(querySnapshot.docs);
 };

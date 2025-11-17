@@ -16,6 +16,8 @@ export interface Tour {
   inclusions: string[];
   available: boolean;
   featured: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface DayItinerary {
@@ -39,6 +41,8 @@ export interface Vehicle {
   features: string[];
   available: boolean;
   stockCount: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface Booking {
@@ -53,8 +57,9 @@ export interface Booking {
   groupSize?: number;
   addOns?: string[];
   totalPrice: number;
-  status: "pending" | "confirmed" | "cancelled";
+  status: "pending" | "confirmed" | "cancelled" | "completed";
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface Testimonial {
@@ -79,6 +84,8 @@ export interface BlogPost {
   image: string;
   keywords: string[];
   category: string;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface SearchParams {
@@ -103,6 +110,8 @@ export interface Landmark {
   image: string;
   category: "Historical" | "Religious" | "Cultural" | "Nature";
   tourType: TourType;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface DayItineraryPlan {
@@ -143,4 +152,24 @@ export interface ItineraryDetails {
   totalTime: number;
   totalPrice: number;
   isFullPackage: boolean;
+}
+
+// Admin-specific types
+export interface UserProfile {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  photoURL: string | null;
+  role: "user" | "admin" | "moderator";
+  createdAt: Date;
+  disabled?: boolean;
+}
+
+export interface SiteSettings {
+  siteName: string;
+  contactEmail: string;
+  contactPhone: string;
+  customTourHourlyRate: number;
+  maintenanceMode: boolean;
+  updatedAt?: Date;
 }
