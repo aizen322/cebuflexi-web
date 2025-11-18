@@ -3,11 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
-import { testimonials } from "@/lib/mockData";
 import { motion } from "framer-motion";
 import { FadeIn } from "@/components/Animation/FadeIn";
+import { useTestimonialsData } from "@/contexts/ContentDataContext";
 
 export function Testimonials() {
+  const { data: testimonials } = useTestimonialsData();
+
   return (
     <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">

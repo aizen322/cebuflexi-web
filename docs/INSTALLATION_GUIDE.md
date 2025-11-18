@@ -25,7 +25,47 @@ firebase deploy --only firestore:indexes
 
 **Note:** Index creation can take 5-30 minutes depending on existing data volume.
 
-## Step 3: Initialize Stats Cache
+## Step 3: Seed Content Collections
+
+Populate Firestore with the static content currently stored in `src/lib/mockData.ts`.
+
+1. Ensure the Firebase Admin environment variables in `.env.local` (or shell) are set:
+   - `FIREBASE_PROJECT_ID`
+   - `FIREBASE_CLIENT_EMAIL`
+   - `FIREBASE_PRIVATE_KEY`
+2. Run a dry-run to preview operations:
+
+```bash
+npm run seed:content
+```
+
+3. Apply the changes once the dry-run output looks correct:
+
+```bash
+npm run seed:content:commit
+```
+
+By default all collections (`tours`, `vehicles`, `blogPosts`, `landmarks`, `testimonials`) are processed. To target a subset, pass the `--collections` flag:
+
+```bash
+npm run seed:content:commit -- --collections=tours,blogPosts
+```
+
+The script is idempotent—it uses deterministic document IDs and `set(..., { merge: true })` so it can be re-run safely after editing source data.
+
+After seeding, run the verification script to confirm counts and sample data:
+
+```bash
+npm run verify:content
+```
+
+To focus on specific collections:
+
+```bash
+npm run verify:content -- --collections=tours,blogPosts
+```
+
+## Step 4: Initialize Stats Cache
 
 Create the initial dashboard stats cache document. Run this once in your Firebase Console or via a script:
 
@@ -69,7 +109,7 @@ export default async function handler(
 
 Then call: `POST /api/admin/initialize-stats`
 
-## Step 4: Update Firestore Rules
+## Step 5: Update Firestore Rules
 
 Add rules for the new `stats` collection:
 
@@ -96,7 +136,7 @@ Deploy rules:
 firebase deploy --only firestore:rules
 ```
 
-## Step 5: Enable Virtual Scrolling (Optional)
+## Step 6: Enable Virtual Scrolling (Optional)
 
 After installing dependencies, enable virtual scrolling:
 
@@ -104,7 +144,7 @@ After installing dependencies, enable virtual scrolling:
 2. Uncomment the `useVirtualizer` import and usage
 3. Replace the simple map with virtualized rendering
 
-## Step 6: Enable SWR Caching (Optional)
+## Step 7: Enable SWR Caching (Optional)
 
 After installing dependencies, enable SWR caching:
 
@@ -113,7 +153,7 @@ After installing dependencies, enable SWR caching:
 3. Uncomment the SWR implementation
 4. Remove the placeholder fallback code
 
-## Step 7: Test the Changes
+## Step 8: Test the Changes
 
 ### Test Dashboard:
 1. Navigate to `/admin/dashboard`
@@ -132,7 +172,7 @@ After installing dependencies, enable SWR caching:
 3. Add/remove landmarks
 4. Verify smooth interactions without lag
 
-## Step 8: Set Up Scheduled Stats Updates (Recommended)
+## Step 9: Set Up Scheduled Stats Updates (Recommended)
 
 Create a Cloud Function to update stats periodically:
 

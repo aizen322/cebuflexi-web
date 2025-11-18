@@ -1,16 +1,23 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
-import { featuredTours } from "@/lib/mockData";
+import { useToursData } from "@/contexts/ContentDataContext";
+import { Tour } from "@/types";
 
 export function HeroSection() {
   const router = useRouter();
+  const { data: tours } = useToursData();
+  const featuredTours = useMemo(
+    () => tours.filter((tour) => tour.featured),
+    [tours]
+  );
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
-  const [filteredSuggestions, setFilteredSuggestions] = useState(featuredTours);
+  const [filteredSuggestions, setFilteredSuggestions] =
+    useState<Tour[]>(featuredTours);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -19,13 +26,19 @@ export function HeroSection() {
     if (!searchQuery.trim()) {
       setFilteredSuggestions(featuredTours);
     } else {
-      const filtered = featuredTours.filter(tour => 
-        tour.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tour.location.toLowerCase().includes(searchQuery.toLowerCase())
+      const query = searchQuery.toLowerCase();
+      const filtered = featuredTours.filter(
+        (tour) =>
+          tour.title.toLowerCase().includes(query) ||
+          tour.location.toLowerCase().includes(query)
       );
       setFilteredSuggestions(filtered);
     }
-  }, [searchQuery]);
+  }, [searchQuery, featuredTours]);
+
+  useEffect(() => {
+    setFilteredSuggestions(featuredTours);
+  }, [featuredTours]);
 
 
   // Handle clicking outside to close suggestions

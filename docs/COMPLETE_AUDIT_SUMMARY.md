@@ -412,6 +412,8 @@ Throughout this refactoring, we maintained:
 - [ ] Run `npm install`
 - [ ] Run `npm audit` to verify
 - [ ] Deploy Firestore indexes
+- [ ] Seed content collections (`npm run seed:content:commit`)
+- [ ] Verify seeded data (`npm run verify:content`)
 - [ ] Initialize stats cache
 - [ ] Test on staging
 - [ ] Deploy to production

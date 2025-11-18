@@ -1,9 +1,10 @@
+import { useMemo } from "react";
 import { Landmark } from "@/types";
 import { ItineraryMap } from "./ItineraryMap";
 import { LandmarkSelector } from "./LandmarkSelector";
 import { SelectedLandmarks } from "./SelectedLandmarks";
-import { cebuLandmarks, mountainLandmarks } from "@/lib/mockData";
 import { ItineraryState } from "@/hooks/useItineraryState";
+import { useLandmarksData } from "@/contexts/ContentDataContext";
 
 interface ItineraryBuilderProps {
   state: ItineraryState;
@@ -22,6 +23,13 @@ export function ItineraryBuilder({
   onReorder,
   onRemove,
 }: ItineraryBuilderProps) {
+  const { data: landmarksData } = useLandmarksData();
+  const { cebuLandmarks, mountainLandmarks } = useMemo(() => {
+    const cebu = landmarksData.filter((landmark) => landmark.tourType === "cebu-city");
+    const mountain = landmarksData.filter((landmark) => landmark.tourType === "mountain");
+    return { cebuLandmarks: cebu, mountainLandmarks: mountain };
+  }, [landmarksData]);
+
   const getLandmarksForCurrentView = () => {
     if (state.tourDuration === "1-day" && state.day1TourType) {
       return state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks;

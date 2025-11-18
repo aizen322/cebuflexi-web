@@ -20,13 +20,14 @@ import {
   Check,
   Map
 } from "lucide-react";
-import { allTours, vehicles, cebuLandmarks, mountainLandmarks } from "@/lib/mockData";
 import { getBookingById, Booking } from "@/services/bookingService";
 import { motion } from "framer-motion";
 import { parseItineraryDetails, isCustomTour } from "@/lib/customTourHelpers";
 import { ItineraryMap } from "@/components/CustomItinerary/ItineraryMap";
 import { Landmark, MultiDayItineraryDetails } from "@/types";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToursData, useVehiclesData, useLandmarksData } from "@/contexts/ContentDataContext";
+import { useMemo } from "react";
 
 export default function BookingConfirmationPage() {
   const router = useRouter();
@@ -35,6 +36,14 @@ export default function BookingConfirmationPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentConfirmationDay, setCurrentConfirmationDay] = useState<1 | 2>(1);
+  const { data: tours } = useToursData();
+  const { data: vehicles } = useVehiclesData();
+  const { data: landmarks } = useLandmarksData();
+  const { cebuLandmarks, mountainLandmarks, allLandmarks } = useMemo(() => {
+    const cebu = landmarks.filter((landmark) => landmark.tourType === "cebu-city");
+    const mountain = landmarks.filter((landmark) => landmark.tourType === "mountain");
+    return { cebuLandmarks: cebu, mountainLandmarks: mountain, allLandmarks: [...cebu, ...mountain] };
+  }, [landmarks]);
 
   useEffect(() => {
     const fetchBooking = async () => {
@@ -93,8 +102,8 @@ export default function BookingConfirmationPage() {
     );
   }
 
-  const tour = bookingData.tourId ? allTours.find(t => t.id === bookingData.tourId) : null;
-  const vehicle = bookingData.vehicleId ? vehicles.find(v => v.id === bookingData.vehicleId) : null;
+  const tour = bookingData.tourId ? tours.find((t) => t.id === bookingData.tourId) : null;
+  const vehicle = bookingData.vehicleId ? vehicles.find((v) => v.id === bookingData.vehicleId) : null;
   
   // Safely parse customizations JSON
   let customizations = null;
@@ -316,7 +325,7 @@ export default function BookingConfirmationPage() {
                                     <ItineraryMap
                                       landmarks={currentDay.tourType === "mountain" ? mountainLandmarks : cebuLandmarks}
                                       selectedLandmarks={currentDay.landmarks
-                                        .map(l => [...cebuLandmarks, ...mountainLandmarks].find(cl => cl.id === l.id))
+                                        .map(l => allLandmarks.find(cl => cl.id === l.id))
                                         .filter(Boolean) as Landmark[]}
                                       markerColor={currentDay.day === 1 ? "blue" : "green"}
                                     />
@@ -402,10 +411,10 @@ export default function BookingConfirmationPage() {
                               <h4 className="font-semibold mb-3">Your Route</h4>
                               <div className="h-64 rounded-lg overflow-hidden">
                                 <ItineraryMap
-                                  landmarks={[...cebuLandmarks, ...mountainLandmarks]}
+                                  landmarks={allLandmarks}
                                   selectedLandmarks={singleDayDetails.landmarks
                                     .map(l => {
-                                      const found = [...cebuLandmarks, ...mountainLandmarks].find(cl => cl.id === l.id);
+                                      const found = allLandmarks.find(cl => cl.id === l.id);
                                       return found;
                                     })
                                     .filter(Boolean) as Landmark[]}

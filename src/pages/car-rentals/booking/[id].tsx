@@ -25,17 +25,18 @@ import {
   MapPin,
   ArrowLeft
 } from "lucide-react";
-import { vehicles } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBooking, Booking } from "@/services/bookingService";
 import { useToast } from "@/hooks/use-toast";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { useVehiclesData } from "@/contexts/ContentDataContext";
 
 export default function CarRentalBookingPage() {
   const router = useRouter();
   const { id } = router.query;
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { data: vehicles, loading: vehiclesLoading } = useVehiclesData();
 
   const [selectedDates, setSelectedDates] = useState<DateRange | undefined>(undefined);
   const [bookingData, setBookingData] = useState({
@@ -54,8 +55,8 @@ export default function CarRentalBookingPage() {
   });
   const [isBooking, setIsBooking] = useState(false);
 
-  // Find vehicle only after router query is loaded
-  const vehicle = router.isReady && id ? vehicles.find(v => v.id === id) : null;
+  const vehicleId = Array.isArray(id) ? id[0] : id;
+  const vehicle = router.isReady && vehicleId ? vehicles.find((v) => v.id === vehicleId) : null;
 
   // Update form data when user is authenticated
   useEffect(() => {
@@ -69,7 +70,7 @@ export default function CarRentalBookingPage() {
   }, [user]);
 
   // Show loading state while router is loading
-  if (!router.isReady) {
+  if (!router.isReady || vehiclesLoading) {
     return (
       <>
         <Header />

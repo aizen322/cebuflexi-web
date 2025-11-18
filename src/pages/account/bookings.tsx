@@ -16,7 +16,7 @@ import {
   Mail, 
   Clock,
   Car,
-  Map,
+  Map as MapIcon,
   X,
   Filter,
   Loader2,
@@ -24,17 +24,18 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { cancelBooking, Booking } from "@/services/bookingService";
-import { allTours } from "@/lib/mockData";
-import { vehicles } from "@/lib/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
 import { parseItineraryDetails, isCustomTour, getFirstLandmarkImage, getItinerarySummary, getLandmarkNames } from "@/lib/customTourHelpers";
 import { usePaginatedBookings } from "@/hooks/usePaginatedBookings";
+import { useToursData, useVehiclesData } from "@/contexts/ContentDataContext";
 
 export default function UserBookingsPage() {
   const router = useRouter();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { data: tours } = useToursData();
+  const { data: vehicles } = useVehiclesData();
   
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -73,6 +74,15 @@ export default function UserBookingsPage() {
     }
   };
 
+  const tourMap = useMemo(
+    () => new Map(tours.map((tour) => [tour.id, tour])),
+    [tours]
+  );
+  const vehicleMap = useMemo(
+    () => new Map(vehicles.map((vehicle) => [vehicle.id, vehicle])),
+    [vehicles]
+  );
+
   const getBookingItem = (booking: Booking) => {
     if (isCustomTour(booking)) {
       return {
@@ -83,9 +93,9 @@ export default function UserBookingsPage() {
         landmarkNames: getLandmarkNames(booking)
       };
     } else if (booking.bookingType === "tour" && booking.tourId) {
-      return allTours.find(tour => tour.id === booking.tourId);
+      return tourMap.get(booking.tourId) ?? null;
     } else if (booking.bookingType === "vehicle" && booking.vehicleId) {
-      return vehicles.find(vehicle => vehicle.id === booking.vehicleId);
+      return vehicleMap.get(booking.vehicleId) ?? null;
     }
     return null;
   };
@@ -250,8 +260,8 @@ export default function UserBookingsPage() {
                                 )}
 
                                 <div className="flex items-center text-sm text-gray-600">
-                                  {isCustomTour(booking) ? <Map className="h-4 w-4 mr-2" /> :
-                                   booking.bookingType === "tour" ? <Map className="h-4 w-4 mr-2" /> : <Car className="h-4 w-4 mr-2" />}
+                                  {isCustomTour(booking) ? <MapIcon className="h-4 w-4 mr-2" /> :
+                                   booking.bookingType === "tour" ? <MapIcon className="h-4 w-4 mr-2" /> : <Car className="h-4 w-4 mr-2" />}
                                   <span>{isCustomTour(booking) ? "Custom Tour" : 
                                          booking.bookingType === "tour" ? "Tour" : "Vehicle Rental"}</span>
                                 </div>

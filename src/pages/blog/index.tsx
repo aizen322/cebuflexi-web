@@ -1,25 +1,30 @@
 
 import Head from "next/head";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { blogPosts } from "@/lib/mockData";
 import { Calendar, Clock, Search, ArrowRight } from "lucide-react";
+import { useBlogPostsData } from "@/contexts/ContentDataContext";
 
 export default function BlogPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { data: blogPosts, loading } = useBlogPostsData();
 
-  const categories = Array.from(new Set(blogPosts.map(post => post.category)));
+  const categories = useMemo(
+    () => Array.from(new Set(blogPosts.map((post) => post.category))),
+    [blogPosts]
+  );
 
-  const filteredPosts = blogPosts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredPosts = blogPosts.filter((post) => {
+    const matchesSearch =
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = !selectedCategory || post.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -88,51 +93,55 @@ export default function BlogPage() {
               ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredPosts.map((post) => (
-                <Link key={post.id} href={`/blog/${post.slug}`}>
-                  <Card className="h-full hover:shadow-xl transition-shadow cursor-pointer overflow-hidden group">
-                    <div className="relative h-48 overflow-hidden">
-                      <img
-                        src={post.image}
-                        alt={post.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <Badge className="absolute top-4 left-4 bg-blue-600">
-                        {post.category}
-                      </Badge>
-                    </div>
-                    <CardContent className="p-6">
-                      <h2 className="text-xl font-bold mb-3 group-hover:text-blue-600 transition-colors">
-                        {post.title}
-                      </h2>
-                      <p className="text-gray-600 mb-4 line-clamp-3">
-                        {post.excerpt}
-                      </p>
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            {formatDate(post.publishedAt)}
-                          </div>
-                          <div className="flex items-center">
-                            <Clock className="h-4 w-4 mr-1" />
-                            {post.readTime} min read
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex items-center text-blue-600 font-semibold group-hover:translate-x-2 transition-transform">
-                        Read More <ArrowRight className="h-4 w-4 ml-2" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
-            </div>
-
-            {filteredPosts.length === 0 && (
+            {loading ? (
+              <div className="text-center py-12">
+                <p className="text-xl text-gray-600">Loading articles...</p>
+              </div>
+            ) : filteredPosts.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-xl text-gray-600">No articles found. Try a different search or category.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {filteredPosts.map((post) => (
+                  <Link key={post.id} href={`/blog/${post.slug}`}>
+                    <Card className="h-full hover:shadow-xl transition-shadow cursor-pointer overflow-hidden group">
+                      <div className="relative h-48 overflow-hidden">
+                        <img
+                          src={post.image}
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <Badge className="absolute top-4 left-4 bg-blue-600">
+                          {post.category}
+                        </Badge>
+                      </div>
+                      <CardContent className="p-6">
+                        <h2 className="text-xl font-bold mb-3 group-hover:text-blue-600 transition-colors">
+                          {post.title}
+                        </h2>
+                        <p className="text-gray-600 mb-4 line-clamp-3">
+                          {post.excerpt}
+                        </p>
+                        <div className="flex items-center justify-between text-sm text-gray-500">
+                          <div className="flex items-center space-x-4">
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              {formatDate(post.publishedAt)}
+                            </div>
+                            <div className="flex items-center">
+                              <Clock className="h-4 w-4 mr-1" />
+                              {post.readTime} min read
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center text-blue-600 font-semibold group-hover:translate-x-2 transition-transform">
+                          Read More <ArrowRight className="h-4 w-4 ml-2" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
               </div>
             )}
           </div>

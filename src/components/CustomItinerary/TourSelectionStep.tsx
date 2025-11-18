@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Mountain, Building2, Check } from "lucide-react";
 import { TourType, TourDuration } from "@/types";
 import { motion } from "framer-motion";
-import { cebuLandmarks, mountainLandmarks } from "@/lib/mockData";
+import { useMemo } from "react";
+import { useLandmarksData } from "@/contexts/ContentDataContext";
 
 interface TourSelectionStepProps {
   step: "duration" | "tour-type";
@@ -29,6 +30,12 @@ export function TourSelectionStep({
   onContinue,
   onBack
 }: TourSelectionStepProps) {
+  const { data: landmarks } = useLandmarksData();
+  const { cebuLandmarks, mountainLandmarks } = useMemo(() => {
+    const cebu = landmarks.filter((landmark) => landmark.tourType === "cebu-city");
+    const mountain = landmarks.filter((landmark) => landmark.tourType === "mountain");
+    return { cebuLandmarks: cebu, mountainLandmarks: mountain };
+  }, [landmarks]);
   
   const canContinue = () => {
     if (step === "duration") return tourDuration !== null;

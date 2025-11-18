@@ -13,11 +13,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Users, Fuel, Settings, Check, Car, Search } from "lucide-react";
-import { vehicles } from "@/lib/mockData";
 import { Vehicle } from "@/types";
+import { useVehiclesData } from "@/contexts/ContentDataContext";
 
 export default function CarRentalsPage() {
   const router = useRouter();
+  const { data: vehicles, loading } = useVehiclesData();
   const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>(vehicles);
   const [filters, setFilters] = useState({
     withDriver: "all",
@@ -31,10 +32,14 @@ export default function CarRentalsPage() {
   });
   const [searchQuery, setSearchQuery] = useState<string>("");
 
+  useEffect(() => {
+    setFilteredVehicles(vehicles);
+  }, [vehicles]);
+
   // Auto-apply filters when search query changes
   useEffect(() => {
     applyFilters();
-  }, [searchQuery]);
+  }, [searchQuery, vehicles]);
 
   const applyFilters = () => {
     let filtered = [...vehicles];
@@ -203,79 +208,99 @@ export default function CarRentalsPage() {
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 mb-12">
-                  {filteredVehicles.map((vehicle) => (
-                        <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-shadow group">
-                          <div className="flex flex-col md:flex-row">
-                            <div className="md:w-1/3 h-64 md:h-auto relative">
-                              <img
-                                src={vehicle.image}
-                                alt={`${vehicle.type} - Car rental in Cebu`}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                              />
-                              {vehicle.withDriver && (
-                                <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">With Driver Available</Badge>
-                              )}
-                              <Badge className="absolute top-4 right-4 bg-green-600 text-white transition-transform duration-300 group-hover:scale-110">
-                                {vehicle.stockCount} Available
+                {loading ? (
+                  <div className="text-center py-12">
+                    <p className="text-xl text-gray-600">Loading vehicles...</p>
+                  </div>
+                ) : filteredVehicles.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-lg shadow-sm">
+                    <p className="text-xl text-gray-600">No vehicles match your filters.</p>
+                    <Button onClick={resetFilters} className="mt-4">
+                      Reset Filters
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-6 mb-12">
+                    {filteredVehicles.map((vehicle) => (
+                      <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-shadow group">
+                        <div className="flex flex-col md:flex-row">
+                          <div className="md:w-1/3 h-64 md:h-auto relative">
+                            <img
+                              src={vehicle.image}
+                              alt={`${vehicle.type} - Car rental in Cebu`}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                            {vehicle.withDriver && (
+                              <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">
+                                With Driver Available
                               </Badge>
+                            )}
+                            <Badge className="absolute top-4 right-4 bg-green-600 text-white transition-transform duration-300 group-hover:scale-110">
+                              {vehicle.stockCount} Available
+                            </Badge>
+                          </div>
+
+                          <div className="md:w-2/3 p-6 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-start justify-between mb-3">
+                                <div>
+                                  <h3 className="text-2xl font-bold mb-1 group-hover:text-blue-600 transition-colors duration-300">
+                                    {vehicle.type}
+                                  </h3>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-3xl font-bold text-blue-600">₱{vehicle.pricePerDay.toLocaleString()}</p>
+                                  <p className="text-sm text-gray-500">per day</p>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
+                                  <Users className="h-4 w-4 mr-2 text-blue-600" />
+                                  <span>{vehicle.capacity} seats</span>
+                                </div>
+                                <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
+                                  <Settings className="h-4 w-4 mr-2 text-blue-600" />
+                                  <span>{vehicle.transmission}</span>
+                                </div>
+                                <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
+                                  <Fuel className="h-4 w-4 mr-2 text-blue-600" />
+                                  <span>{vehicle.fuelType}</span>
+                                </div>
+                                <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
+                                  <Car className="h-4 w-4 mr-2 text-blue-600" />
+                                  <span>{vehicle.luggage} bags</span>
+                                </div>
+                              </div>
+
+                              <div className="space-y-1 mb-4">
+                                {vehicle.features.map((feature, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center text-sm text-gray-600 transition-transform duration-300 hover:translate-x-1"
+                                  >
+                                    <Check className="h-4 w-4 mr-2 text-blue-600" />
+                                    {feature}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
 
-                            <div className="md:w-2/3 p-6 flex flex-col justify-between">
-                              <div>
-                                <div className="flex items-start justify-between mb-3">
-                                  <div>
-                                    <h3 className="text-2xl font-bold mb-1 group-hover:text-blue-600 transition-colors duration-300">{vehicle.type}</h3>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-3xl font-bold text-blue-600">₱{vehicle.pricePerDay.toLocaleString()}</p>
-                                    <p className="text-sm text-gray-500">per day</p>
-                                  </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                                  <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
-                                    <Users className="h-4 w-4 mr-2 text-blue-600" />
-                                    <span>{vehicle.capacity} seats</span>
-                                  </div>
-                                  <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
-                                    <Settings className="h-4 w-4 mr-2 text-blue-600" />
-                                    <span>{vehicle.transmission}</span>
-                                  </div>
-                                  <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
-                                    <Fuel className="h-4 w-4 mr-2 text-blue-600" />
-                                    <span>{vehicle.fuelType}</span>
-                                  </div>
-                                  <div className="flex items-center text-sm transition-transform duration-300 hover:translate-x-1">
-                                    <Car className="h-4 w-4 mr-2 text-blue-600" />
-                                    <span>{vehicle.luggage} bags</span>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-1 mb-4">
-                                  {vehicle.features.map((feature, idx) => (
-                                    <div key={idx} className="flex items-center text-sm text-gray-600 transition-transform duration-300 hover:translate-x-1">
-                                      <Check className="h-4 w-4 mr-2 text-blue-600" />
-                                      {feature}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              <div className="flex gap-3">
-                                <Button 
-                                  variant="outline" 
-                                  className="flex-1 bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 hover:scale-105"
-                                  onClick={() => router.push(`/car-rentals/booking/${vehicle.id}`)}
-                                >
-                                  View Details
-                                </Button>
-                              </div>
+                            <div className="flex gap-3">
+                              <Button
+                                variant="outline"
+                                className="flex-1 bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 hover:scale-105"
+                                onClick={() => router.push(`/car-rentals/booking/${vehicle.id}`)}
+                              >
+                                View Details
+                              </Button>
                             </div>
                           </div>
-                        </Card>
-                  ))}
-                </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
 
               </div>
             </div>

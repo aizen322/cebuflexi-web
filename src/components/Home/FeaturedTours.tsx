@@ -3,12 +3,19 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Users, MapPin } from "lucide-react";
-import { featuredTours } from "@/lib/mockData";
 import { motion } from "framer-motion";
 import { FadeIn } from "@/components/Animation/FadeIn";
 import { StaggerContainer, staggerItem } from "@/components/Animation/StaggerContainer";
+import { useToursData } from "@/contexts/ContentDataContext";
+import { useMemo } from "react";
 
 export function FeaturedTours() {
+  const { data: tours } = useToursData();
+  const featuredTours = useMemo(
+    () => tours.filter((tour) => tour.featured),
+    [tours]
+  );
+
   return (
     <section className="py-20 bg-gray-50">
       <div className="container mx-auto px-4">

@@ -13,19 +13,20 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Clock, Users, MapPin, Check, Mail, User, ArrowLeft } from "lucide-react";
-import { allTours } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBooking, Booking, checkUserPendingBookings } from "@/services/bookingService";
 import { useToast } from "@/hooks/use-toast";
 import { BookingValidationDialog } from "@/components/Tours/BookingValidationDialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PhoneInput } from "@/components/ui/phone-input";
+import { useToursData } from "@/contexts/ContentDataContext";
 
 export default function TourDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { data: tours, loading: toursLoading } = useToursData();
 
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -48,7 +49,8 @@ export default function TourDetailPage() {
   const [validationData, setValidationData] = useState<any>(null);
 
   // Find tour only after router query is loaded
-  const tour = router.isReady && id ? allTours.find(t => t.id === id) : null;
+  const tourId = Array.isArray(id) ? id[0] : id;
+  const tour = router.isReady && tourId ? tours.find((t) => t.id === tourId) : null;
  
   // Update form data when user is authenticated
   useEffect(() => {
@@ -72,7 +74,7 @@ export default function TourDetailPage() {
   }, [tour]);
 
   // Show loading state while router is loading
-  if (!router.isReady) {
+  if (!router.isReady || toursLoading) {
     return (
       <>
         <Header />

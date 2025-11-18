@@ -1,12 +1,21 @@
-
-import { useEffect, useRef } from "react";
-import { cebuHotspots } from "@/lib/mockData";
+import { useEffect, useRef, useMemo } from "react";
+import { useContentData } from "@/contexts/ContentDataContext";
 
 export function CebuMap() {
   const mapRef = useRef<HTMLDivElement>(null);
+  const { landmarks } = useContentData();
+
+  // Derive hotspots from landmarks
+  const cebuHotspots = useMemo(() => {
+    return landmarks.map((landmark) => ({
+      name: landmark.name,
+      lat: landmark.location.lat,
+      lng: landmark.location.lng,
+    }));
+  }, [landmarks]);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || cebuHotspots.length === 0) return;
 
     const loadMap = () => {
       const google = (window as any).google;
@@ -51,7 +60,7 @@ export function CebuMap() {
       script.addEventListener("load", loadMap);
       document.head.appendChild(script);
     }
-  }, []);
+  }, [cebuHotspots]);
 
   return (
     <section className="py-20 bg-white">

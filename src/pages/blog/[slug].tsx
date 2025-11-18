@@ -7,14 +7,31 @@ import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { blogPosts } from "@/lib/mockData";
 import { Calendar, Clock, ArrowLeft, Share2, Facebook, Twitter } from "lucide-react";
+import { useBlogPostsData } from "@/contexts/ContentDataContext";
 
 export default function BlogPostPage() {
   const router = useRouter();
   const { slug } = router.query;
+  const { data: blogPosts, loading } = useBlogPostsData();
 
-  const post = blogPosts.find(p => p.slug === slug);
+  const postSlug = Array.isArray(slug) ? slug[0] : slug;
+  const post = postSlug ? blogPosts.find((p) => p.slug === postSlug) : undefined;
+
+  if (!router.isReady || loading) {
+    return (
+      <>
+        <Header />
+        <main className="pt-20 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Loading article...</p>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
 
   if (!post) {
     return (

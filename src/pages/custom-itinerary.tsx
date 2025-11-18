@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { Mail, User, ArrowLeft } from "lucide-react";
-import { cebuLandmarks, mountainLandmarks } from "@/lib/mockData";
 import { Landmark, TourType, MultiDayItineraryDetails } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { createBooking, Booking, checkUserPendingBookings } from "@/services/bookingService";
@@ -29,11 +28,13 @@ import { MultiDayItinerarySummary } from "@/components/CustomItinerary/MultiDayI
 import { TourSelectionStep } from "@/components/CustomItinerary/TourSelectionStep";
 import { DayTabs } from "@/components/CustomItinerary/DayTabs";
 import { useItineraryState } from "@/hooks/useItineraryState";
+import { useLandmarksData } from "@/contexts/ContentDataContext";
 
 export default function CustomItineraryPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const { data: landmarks } = useLandmarksData();
 
   // Use optimized state management
   const { state, dispatch, selectedLandmarks, canBook } =
@@ -71,16 +72,25 @@ export default function CustomItineraryPage() {
     dispatch({ type: "TOGGLE_LANDMARK", payload: { landmark } });
   };
 
+  const cebuLandmarksData = useMemo(
+    () => landmarks.filter((landmark) => landmark.tourType === "cebu-city"),
+    [landmarks]
+  );
+  const mountainLandmarksData = useMemo(
+    () => landmarks.filter((landmark) => landmark.tourType === "mountain"),
+    [landmarks]
+  );
+
   const handleSelectAll = () => {
     if (state.tourDuration === "2-days") {
       const source =
         state.currentDay === 1
           ? state.day1TourType === "mountain"
-            ? mountainLandmarks
-            : cebuLandmarks
+            ? mountainLandmarksData
+            : cebuLandmarksData
           : state.day2TourType === "mountain"
-          ? mountainLandmarks
-          : cebuLandmarks;
+          ? mountainLandmarksData
+          : cebuLandmarksData;
       dispatch({ type: "SELECT_ALL", payload: { landmarks: [...source] } });
       return;
     }
@@ -89,7 +99,7 @@ export default function CustomItineraryPage() {
       dispatch({ type: "SELECT_ALL", payload: { landmarks: [] } });
     } else {
       const source =
-        state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks;
+        state.day1TourType === "mountain" ? mountainLandmarksData : cebuLandmarksData;
       dispatch({ type: "SELECT_ALL", payload: { landmarks: [...source] } });
     }
   };
@@ -430,15 +440,15 @@ export default function CustomItineraryPage() {
                   <h2 className="text-2xl font-bold mb-4">Interactive Route Map</h2>
                   {state.tourDuration === "1-day" && state.day1TourType ? (
                     <ItineraryMap
-                      landmarks={state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks}
+                      landmarks={state.day1TourType === "mountain" ? mountainLandmarksData : cebuLandmarksData}
                       selectedLandmarks={selectedLandmarks}
                     />
                   ) : state.tourDuration === "2-days" ? (
                     <ItineraryMap
                       landmarks={
                         state.currentDay === 1 
-                          ? (state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
-                          : (state.day2TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
+                          ? (state.day1TourType === "mountain" ? mountainLandmarksData : cebuLandmarksData)
+                          : (state.day2TourType === "mountain" ? mountainLandmarksData : cebuLandmarksData)
                       }
                       selectedLandmarks={selectedLandmarks}
                       markerColor={state.currentDay === 1 ? "blue" : "green"}
@@ -450,7 +460,7 @@ export default function CustomItineraryPage() {
                 <div className="bg-white rounded-lg p-6">
                   {state.tourDuration === "1-day" && state.day1TourType ? (
                     <LandmarkSelector
-                      landmarks={state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks}
+                      landmarks={state.day1TourType === "mountain" ? mountainLandmarksData : cebuLandmarksData}
                       selectedLandmarks={selectedLandmarks}
                       onToggleLandmark={handleToggleLandmark}
                       onSelectAll={handleSelectAll}
@@ -461,8 +471,8 @@ export default function CustomItineraryPage() {
                     <LandmarkSelector
                       landmarks={
                         state.currentDay === 1 
-                          ? (state.day1TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
-                          : (state.day2TourType === "mountain" ? mountainLandmarks : cebuLandmarks)
+                          ? (state.day1TourType === "mountain" ? mountainLandmarksData : cebuLandmarksData)
+                          : (state.day2TourType === "mountain" ? mountainLandmarksData : cebuLandmarksData)
                       }
                       selectedLandmarks={selectedLandmarks}
                       onToggleLandmark={handleToggleLandmark}

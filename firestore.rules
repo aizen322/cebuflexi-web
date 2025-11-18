@@ -53,6 +53,37 @@ service cloud.firestore {
     function isValidGroupSize(size) {
       return size is number && size >= 1 && size <= 100;
     }
+
+    function isValidImageList(images) {
+      return images is list &&
+        images.size() >= 1 &&
+        images.size() <= 10 &&
+        images.all(image, image is string && image.matches('^https://'));
+    }
+
+    function isValidStringList(values, minItems, maxItems, maxLength) {
+      return values is list &&
+        values.size() >= minItems &&
+        values.size() <= maxItems &&
+        values.all(val, val is string && val.size() >= 1 && val.size() <= maxLength);
+    }
+
+    function isValidItinerary(itinerary) {
+      return itinerary is list &&
+        itinerary.size() >= 1 &&
+        itinerary.size() <= 30 &&
+        itinerary.all(item,
+          item is map &&
+          item.keys().hasAll(['day', 'title', 'activities', 'meals']) &&
+          item.day is number &&
+          item.day >= 1 &&
+          item.day <= 30 &&
+          item.title is string &&
+          item.title.size() <= 150 &&
+          isValidStringList(item.activities, 1, 20, 150) &&
+          isValidStringList(item.meals, 0, 10, 100)
+        );
+    }
     
     // Users collection
     match /users/{userId} {
@@ -156,11 +187,14 @@ service cloud.firestore {
       // Validate tour data
       allow create, update: if isAdmin() &&
         request.resource.data.keys().hasAll([
-          'id', 'title', 'category', 'description', 'price', 
-          'duration', 'location', 'groupSize', 'images', 'available'
+          'id', 'title', 'category', 'description', 'shortDescription',
+          'price', 'duration', 'location', 'groupSize', 'images',
+          'itinerary', 'inclusions', 'available', 'featured'
         ]) &&
         request.resource.data.title is string &&
         request.resource.data.title.size() <= 200 &&
+        request.resource.data.shortDescription is string &&
+        request.resource.data.shortDescription.size() <= 300 &&
         request.resource.data.category is string &&
         request.resource.data.category.size() <= 50 &&
         request.resource.data.description is string &&
@@ -174,9 +208,11 @@ service cloud.firestore {
         isValidGroupSize(request.resource.data.groupSize.min) &&
         isValidGroupSize(request.resource.data.groupSize.max) &&
         request.resource.data.groupSize.min <= request.resource.data.groupSize.max &&
-        request.resource.data.images is list &&
-        request.resource.data.images.size() >= 1 && request.resource.data.images.size() <= 10 &&
-        request.resource.data.available is bool;
+        isValidImageList(request.resource.data.images) &&
+        isValidItinerary(request.resource.data.itinerary) &&
+        isValidStringList(request.resource.data.inclusions, 1, 20, 150) &&
+        request.resource.data.available is bool &&
+        request.resource.data.featured is bool;
     }
     
     // Vehicles collection (admin only)
@@ -187,19 +223,28 @@ service cloud.firestore {
       // Validate vehicle data
       allow create, update: if isAdmin() &&
         request.resource.data.keys().hasAll([
-          'id', 'name', 'type', 'pricePerDay', 'capacity', 
-          'transmission', 'fuelType', 'available'
+          'id', 'name', 'type', 'image', 'pricePerDay', 'capacity', 
+          'transmission', 'fuelType', 'withDriver', 'luggage', 'features',
+          'available', 'stockCount'
         ]) &&
         request.resource.data.name is string &&
         request.resource.data.name.size() <= 100 &&
         request.resource.data.type is string &&
         request.resource.data.type in ['Sedan', 'SUV', 'Van', 'Hatchback', 'Convertible'] &&
+        request.resource.data.image is string &&
+        request.resource.data.image.matches('^https://') &&
         isValidPrice(request.resource.data.pricePerDay) &&
         request.resource.data.capacity is number &&
         request.resource.data.capacity >= 1 && request.resource.data.capacity <= 15 &&
         request.resource.data.transmission in ['Manual', 'Automatic'] &&
         request.resource.data.fuelType in ['Gasoline', 'Diesel', 'Electric', 'Hybrid'] &&
-        request.resource.data.available is bool;
+        request.resource.data.withDriver is bool &&
+        request.resource.data.luggage is number &&
+        request.resource.data.luggage >= 0 && request.resource.data.luggage <= 20 &&
+        isValidStringList(request.resource.data.features, 0, 15, 150) &&
+        request.resource.data.available is bool &&
+        request.resource.data.stockCount is number &&
+        request.resource.data.stockCount >= 0 && request.resource.data.stockCount <= 100;
     }
     
     // Admin logs collection (admin only)
@@ -266,12 +311,77 @@ service cloud.firestore {
     match /landmarks/{landmarkId} {
       allow read: if true; // Public read access for custom tours
       allow write: if isAdmin();
+      
+      allow create, update: if isAdmin() &&
+        request.resource.data.keys().hasAll([
+          'id', 'name', 'description', 'location', 'estimatedDuration',
+          'image', 'category', 'tourType'
+        ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() <= 150 &&
+        request.resource.data.description is string &&
+        request.resource.data.description.size() <= 1000 &&
+        request.resource.data.location is map &&
+        request.resource.data.location.lat is number &&
+        request.resource.data.location.lat >= -90 &&
+        request.resource.data.location.lat <= 90 &&
+        request.resource.data.location.lng is number &&
+        request.resource.data.location.lng >= -180 &&
+        request.resource.data.location.lng <= 180 &&
+        request.resource.data.estimatedDuration is number &&
+        request.resource.data.estimatedDuration >= 15 &&
+        request.resource.data.estimatedDuration <= 600 &&
+        request.resource.data.image is string &&
+        request.resource.data.image.matches('^https://') &&
+        request.resource.data.category in ['Historical', 'Religious', 'Cultural', 'Nature'] &&
+        request.resource.data.tourType in ['cebu-city', 'mountain'];
+    }
+    
+    // Testimonials collection (admin write, public read)
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      
+      allow create, update: if isAdmin() &&
+        request.resource.data.keys().hasAll([
+          'id', 'name', 'location', 'rating', 'text', 'avatar'
+        ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() <= 100 &&
+        request.resource.data.location is string &&
+        request.resource.data.location.size() <= 100 &&
+        request.resource.data.rating is number &&
+        request.resource.data.rating >= 1 && request.resource.data.rating <= 5 &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() <= 1000 &&
+        request.resource.data.avatar is string &&
+        request.resource.data.avatar.matches('^https://') &&
+        (request.resource.data.tourId == null || request.resource.data.tourId is string);
     }
     
     // Blog posts collection (admin write, public read)
     match /blogPosts/{postId} {
       allow read: if true; // Public read access
       allow write: if isAdmin();
+      
+      function isValidBlogPost(data) {
+        return data.keys().hasAll([
+          'id', 'title', 'slug', 'excerpt', 'content', 'author',
+          'publishedAt', 'readTime', 'image', 'keywords', 'category'
+        ]) &&
+        data.title is string && data.title.size() <= 200 &&
+        data.slug is string && data.slug.size() <= 200 &&
+        data.excerpt is string && data.excerpt.size() <= 500 &&
+        data.content is string &&
+        data.author is string && data.author.size() <= 100 &&
+        data.publishedAt is timestamp &&
+        data.readTime is number && data.readTime >= 1 && data.readTime <= 60 &&
+        data.image is string && data.image.matches('^https://') &&
+        isValidStringList(data.keywords, 1, 25, 100) &&
+        data.category is string && data.category.size() <= 50;
+      }
+
+      allow create, update: if isAdmin() && isValidBlogPost(request.resource.data);
     }
     
     // Stats collection (admin only - for cached dashboard statistics)

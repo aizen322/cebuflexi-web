@@ -6,14 +6,19 @@ import { Footer } from "@/components/Layout/Footer";
 import { TourCard } from "@/components/Tours/TourCard";
 import { TourFilters } from "@/components/Tours/TourFilters";
 import { DIYTourCallout } from "@/components/Tours/DIYTourCallout";
-import { allTours } from "@/lib/mockData";
 import { Tour } from "@/types";
+import { useToursData } from "@/contexts/ContentDataContext";
 
 export default function ToursPage() {
   const router = useRouter();
-  const [filteredTours, setFilteredTours] = useState<Tour[]>(allTours);
+  const { data: tours, loading } = useToursData();
+  const [filteredTours, setFilteredTours] = useState<Tour[]>(tours);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  useEffect(() => {
+    setFilteredTours(tours);
+  }, [tours]);
 
   useEffect(() => {
     const { category, date, search } = router.query;
@@ -36,7 +41,7 @@ export default function ToursPage() {
   }, [router.query]);
 
   const handleFilterChange = (filters: any) => {
-    let filtered = [...allTours];
+    let filtered = [...tours];
 
     // Search filter (highest priority)
     if (filters.search && filters.search.trim()) {
@@ -61,7 +66,9 @@ export default function ToursPage() {
 
     if (filters.priceRange) {
       const [min, max] = filters.priceRange;
-      filtered = filtered.filter(tour => tour.price >= min && tour.price <= max);
+      filtered = filtered.filter(
+        (tour) => tour.price >= min && tour.price <= max
+      );
     }
 
     setFilteredTours(filtered);
@@ -114,7 +121,11 @@ export default function ToursPage() {
                   </h2>
                 </div>
 
-                {filteredTours.length === 0 ? (
+                {loading ? (
+                  <div className="text-center py-12">
+                    <p className="text-xl text-gray-600">Loading tours...</p>
+                  </div>
+                ) : filteredTours.length === 0 ? (
                   <div className="text-center py-12">
                     <p className="text-xl text-gray-600">No tours match your filters. Try adjusting your criteria.</p>
                   </div>
