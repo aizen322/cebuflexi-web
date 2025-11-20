@@ -1,13 +1,16 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
+import Link from "next/link";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { AdminProtectedRoute } from "@/components/Auth/AdminProtectedRoute";
 import { AdminLayout } from "@/components/Admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { COLLECTIONS } from "@/lib/firestore-collections";
 import { Landmark } from "@/types";
+import { Plus, Edit } from "lucide-react";
 
 export default function AdminLandmarksPage() {
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
@@ -37,11 +40,19 @@ export default function AdminLandmarksPage() {
 
       <AdminLayout>
         <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Landmarks</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage landmarks for custom itinerary building
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Landmarks</h1>
+              <p className="text-muted-foreground mt-1">
+                Manage landmarks for custom itinerary building
+              </p>
+            </div>
+            <Button asChild>
+              <Link href="/admin/landmarks/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Add New Landmark
+              </Link>
+            </Button>
           </div>
 
           <Card>
@@ -56,12 +67,22 @@ export default function AdminLandmarksPage() {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {landmarks.map((landmark) => (
                     <Card key={landmark.id}>
-                      <div className="relative h-32">
-                        <img
-                          src={landmark.image}
-                          alt={landmark.name}
-                          className="w-full h-full object-cover rounded-t-lg"
-                        />
+                      <div className="relative h-32 bg-gray-200">
+                        {landmark.image ? (
+                          <img
+                            src={landmark.image}
+                            alt={landmark.name}
+                            className="w-full h-full object-cover rounded-t-lg"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400 text-xs"><span>No Image</span></div>';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400 text-xs">
+                            <span>No Image</span>
+                          </div>
+                        )}
                       </div>
                       <CardContent className="p-4">
                         <h3 className="font-semibold">{landmark.name}</h3>
@@ -75,6 +96,17 @@ export default function AdminLandmarksPage() {
                         <p className="text-xs text-muted-foreground mt-2">
                           Duration: {landmark.estimatedDuration} min
                         </p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-3"
+                          asChild
+                        >
+                          <Link href={`/admin/landmarks/${landmark.id}/edit`}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Link>
+                        </Button>
                       </CardContent>
                     </Card>
                   ))}

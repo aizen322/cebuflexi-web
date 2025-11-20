@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useForm, useFieldArray } from "react-hook-form";
@@ -18,21 +18,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Upload, Loader2, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload, Loader2 } from "lucide-react";
 import { tourSchema, TourFormData } from "@/lib/validation/tourSchema";
-import { createTour } from "@/services/admin/tourService";
+import { updateTour, getTourById } from "@/services/admin/tourService";
 import { uploadTourImages, validateImageFile } from "@/lib/admin/imageUpload";
 import type { Tour } from "@/types";
 
-export default function AdminNewTourPage() {
+export default function AdminEditTourPage() {
   const router = useRouter();
+  const { id } = router.query;
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [fetchingTour, setFetchingTour] = useState(true);
   const [uploadProgress, setUploadProgress] = useState<Record<number, number>>({});
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
   const {
@@ -42,6 +45,7 @@ export default function AdminNewTourPage() {
     formState: { errors },
     watch,
     setValue,
+    reset,
   } = useForm<TourFormData>({
     resolver: zodResolver(tourSchema),
     defaultValues: {
@@ -65,12 +69,85 @@ export default function AdminNewTourPage() {
     fields: itineraryFields,
     append: appendItinerary,
     remove: removeItinerary,
+    replace: replaceItinerary,
   } = useFieldArray<TourFormData, "itinerary">({
     control,
     name: "itinerary",
   });
 
   const inclusions = watch("inclusions");
+
+  // Load tour data when component mounts
+  useEffect(() => {
+    async function loadTour() {
+      const tourId = Array.isArray(id) ? id[0] : id;
+      if (!tourId || !router.isReady) return;
+
+      try {
+        setFetchingTour(true);
+        const tour = await getTourById(tourId);
+
+        if (!tour) {
+          toast({
+            title: "Error",
+            description: "Tour not found",
+            variant: "destructive",
+          });
+          router.push("/admin/tours");
+          return;
+        }
+
+        // Set existing images
+        setExistingImages(tour.images || []);
+        setImagePreviews(tour.images || []);
+
+        // Normalize itinerary data - join arrays with commas for form display
+        const normalizedItinerary = (tour.itinerary || []).map((day) => ({
+          ...day,
+          activities: Array.isArray(day.activities) 
+            ? [day.activities.join(", ")] 
+            : [day.activities || ""].filter(Boolean),
+          meals: Array.isArray(day.meals) 
+            ? [day.meals.join(", ")] 
+            : [day.meals || ""].filter(Boolean),
+        }));
+
+        // Pre-populate form with tour data
+        reset({
+          title: tour.title || "",
+          category: tour.category || "Beach",
+          description: tour.description || "",
+          shortDescription: tour.shortDescription || "",
+          price: tour.price || 0,
+          duration: tour.duration || 1,
+          location: tour.location || "",
+          groupSize: tour.groupSize || { min: 1, max: 10 },
+          images: tour.images || [],
+          itinerary: normalizedItinerary.length > 0 ? normalizedItinerary : [{ day: 1, title: "", activities: [""], meals: [""] }],
+          inclusions: tour.inclusions && tour.inclusions.length > 0 ? tour.inclusions : [""],
+          available: tour.available ?? true,
+          featured: tour.featured ?? false,
+        });
+
+        // Replace itinerary fields
+        if (normalizedItinerary.length > 0) {
+          replaceItinerary(normalizedItinerary);
+        }
+      } catch (error: any) {
+        console.error("Error loading tour:", error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to load tour",
+          variant: "destructive",
+        });
+        router.push("/admin/tours");
+      } finally {
+        setFetchingTour(false);
+      }
+    }
+
+    loadTour();
+  }, [id, router, reset, replaceItinerary, toast]);
 
   const addInclusion = () => {
     const current = inclusions ?? [];
@@ -110,26 +187,15 @@ export default function AdminNewTourPage() {
       return;
     }
 
-    // Create previews and add files
+    // Create previews for new files
     const newPreviews = files.map(file => URL.createObjectURL(file));
-    
-    setImageFiles(prev => {
-      const updated = [...prev, ...files];
-      console.log("Updated imageFiles:", updated.length);
-      return updated;
-    });
-    
-    setImagePreviews(prev => {
-      const updated = [...prev, ...newPreviews];
-      console.log("Updated imagePreviews:", updated.length);
-      return updated;
-    });
+    setImageFiles(prev => [...prev, ...files]);
+    setImagePreviews(prev => [...prev, ...newPreviews]);
   }
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
     processFiles(files);
-    // Clear the input so the same file can be selected again if needed
     e.target.value = "";
   }
 
@@ -159,100 +225,32 @@ export default function AdminNewTourPage() {
     }
   }
 
-  function handleTestImages() {
-    // Trigger file picker for quick testing
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.multiple = true;
-    input.onchange = (e) => {
-      const target = e.target as HTMLInputElement;
-      const files = Array.from(target.files || []);
-      if (files.length > 0) {
-        processFiles(files);
-      }
-    };
-    input.click();
-  }
-
   function removeImage(index: number) {
-    setImageFiles(prev => prev.filter((_, i) => i !== index));
-    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    // Check if it's an existing image or a new file
+    const totalExisting = existingImages.length;
+    
+    if (index < totalExisting) {
+      // Remove existing image
+      const newExisting = existingImages.filter((_, i) => i !== index);
+      setExistingImages(newExisting);
+      setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    } else {
+      // Remove new file
+      const fileIndex = index - totalExisting;
+      setImageFiles(prev => prev.filter((_, i) => i !== fileIndex));
+      setImagePreviews(prev => prev.filter((_, i) => i !== index));
+    }
   }
-
-  const onError = (errors: any) => {
-    console.error("Form validation errors:", errors);
-    
-    // Get all error messages (safely extract without stringifying)
-    const errorMessages: string[] = [];
-    const extractErrors = (errObj: any, prefix = "") => {
-      Object.keys(errObj).forEach((key) => {
-        const error = errObj[key];
-        const fullKey = prefix ? `${prefix}.${key}` : key;
-        
-        if (error?.message) {
-          errorMessages.push(`${fullKey}: ${error.message}`);
-        } else if (error?.type) {
-          errorMessages.push(`${fullKey}: ${error.type}`);
-        } else if (typeof error === 'object' && error !== null && !Array.isArray(error)) {
-          // Recursively extract nested errors
-          extractErrors(error, fullKey);
-        }
-      });
-    };
-    
-    extractErrors(errors);
-
-    const errorMessage = errorMessages.length > 0 
-      ? errorMessages.join(". ") 
-      : "Please check all required fields";
-    
-    toast({
-      title: "Validation Error",
-      description: errorMessage,
-      variant: "destructive",
-    });
-  };
 
   async function onSubmit(data: TourFormData) {
-    console.log("Form submitted with data:", data);
-    console.log("Image files count:", imageFiles.length);
-    console.log("Image previews count:", imagePreviews.length);
-    
-    // Validate images - check if user has selected any images
-    // Use imagePreviews as primary check since that's what user sees
-    if (imagePreviews.length === 0) {
-      toast({
-        title: "Error",
-        description: "Please add at least one image",
-        variant: "destructive",
-      });
-      return;
-    }
+    const tourId = Array.isArray(id) ? id[0] : id;
+    if (!tourId) return;
 
-    // Ensure imageFiles and imagePreviews are in sync
-    // If they don't match, use imagePreviews length but warn
-    if (imageFiles.length !== imagePreviews.length) {
-      console.warn("Image files and previews are out of sync. Files:", imageFiles.length, "Previews:", imagePreviews.length);
-      console.warn("This might be a state sync issue. Proceeding with available files.");
-      
-      // If we have fewer files than previews, it's a problem
-      if (imageFiles.length < imagePreviews.length) {
-        toast({
-          title: "Error",
-          description: "Some images failed to load. Please try selecting images again.",
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-    
-    // Use the actual files array length for upload
-    const filesToUpload = imageFiles.length > 0 ? imageFiles : [];
-    if (filesToUpload.length === 0) {
+    // Ensure at least one image (existing or new)
+    if (existingImages.length === 0 && imageFiles.length === 0) {
       toast({
         title: "Error",
-        description: "No image files found. Please try selecting images again.",
+        description: "Please keep at least one image",
         variant: "destructive",
       });
       return;
@@ -260,175 +258,56 @@ export default function AdminNewTourPage() {
 
     setLoading(true);
     try {
-      console.log("Starting tour creation process...");
-      
-      // Process itinerary - split comma-separated activities and meals back into arrays
-      const processedItinerary = data.itinerary.map((day, index) => {
-        // Get the activities string (from activities[0] which is registered in the form)
-        const activitiesStr = day.activities && day.activities.length > 0 ? day.activities[0] : "";
-        const mealsStr = day.meals && day.meals.length > 0 ? day.meals[0] : "";
+      let finalImageUrls = [...existingImages];
 
-        const activities = activitiesStr.trim()
-          ? activitiesStr.split(",").map(a => a.trim()).filter(Boolean)
-          : [];
-        const meals = mealsStr.trim()
-          ? mealsStr.split(",").map(m => m.trim()).filter(Boolean)
-          : [];
-
-        // Ensure at least one activity (required by schema)
-        if (activities.length === 0) {
-          throw new Error(`Day ${index + 1}: At least one activity is required`);
-        }
-
-        // Ensure day title is provided
-        if (!day.title || day.title.trim().length < 3) {
-          throw new Error(`Day ${index + 1}: Title must be at least 3 characters`);
-        }
-
-        return {
-          day: index + 1, // Ensure day number is correct
-          title: day.title.trim(),
-          activities,
-          meals,
-        };
-      });
-
-      // Filter out empty inclusions
-      const processedInclusions = (data.inclusions || []).filter(inc => inc.trim().length > 0);
-      
-      if (processedInclusions.length === 0) {
-        throw new Error("At least one inclusion is required");
-      }
-
-      // First create tour without images to get the real tour ID
-      const tourData: Omit<Tour, "id"> = {
-        title: data.title,
-        category: data.category,
-        description: data.description,
-        shortDescription: data.shortDescription,
-        price: data.price,
-        duration: data.duration,
-        location: data.location,
-        groupSize: data.groupSize,
-        images: [], // Create with empty images first
-        itinerary: processedItinerary,
-        inclusions: processedInclusions,
-        available: data.available,
-        featured: data.featured,
-      };
-
-      // Create tour first to get the real tour ID
-      const tourId = await createTour(tourData);
-      console.log("Tour created with ID:", tourId);
-
-      // Verify authentication before upload
-      const { auth } = await import("@/lib/firebase");
-      const currentUser = auth.currentUser;
-      if (!currentUser) {
-        const { deleteTour } = await import("@/services/admin/tourService");
-        await deleteTour(tourId).catch(console.error);
-        throw new Error("You must be logged in to upload images. Please refresh the page and try again.");
-      }
-      console.log("User authenticated:", currentUser.uid);
-
-      // Now upload images with the real tour ID
-      let imageUrls: string[] = [];
-      try {
-        imageUrls = await uploadTourImages(
-          filesToUpload,
+      // Upload new images if any
+      if (imageFiles.length > 0) {
+        const newImageUrls = await uploadTourImages(
+          imageFiles,
           tourId,
           (index, progress) => {
             setUploadProgress(prev => ({
               ...prev,
-              [index]: progress,
+              [existingImages.length + index]: progress,
             }));
           }
         );
-        console.log("Images uploaded successfully:", imageUrls.length);
-
-        // Update tour with image URLs
-        if (imageUrls.length > 0) {
-          const { updateTour } = await import("@/services/admin/tourService");
-          await updateTour(tourId, { images: imageUrls });
-          console.log("Tour updated with images");
-        }
-      } catch (uploadError: any) {
-        console.error("Error uploading images:", uploadError);
-        console.error("Error details:", {
-          code: uploadError.code,
-          message: uploadError.message,
-          stack: uploadError.stack
-        });
-        
-        // Check if it's a CORS error (can appear in various forms)
-        const errorMessage = String(uploadError.message || "");
-        const errorCode = String(uploadError.code || "");
-        const isCorsError = 
-          errorMessage.includes("CORS") || 
-          errorMessage.includes("blocked") ||
-          errorMessage.includes("preflight") ||
-          errorMessage.includes("ERR_FAILED") ||
-          errorCode === "storage/unauthorized" ||
-          errorCode === "storage/unknown";
-        
-        // If image upload fails, delete the tour and show error
-        const { deleteTour } = await import("@/services/admin/tourService");
-        try {
-          await deleteTour(tourId);
-        } catch (deleteError) {
-          console.error("Error deleting tour after upload failure:", deleteError);
-        }
-        
-        if (isCorsError || !errorMessage) {
-          const detailedMessage = 
-            "❌ Image upload failed due to Firebase Storage Security Rules.\n\n" +
-            "📋 To fix this:\n" +
-            "1. Go to Firebase Console: https://console.firebase.google.com/\n" +
-            "2. Select your project: cebuflexitours\n" +
-            "3. Navigate to Storage > Rules\n" +
-            "4. Replace your rules with:\n\n" +
-            "rules_version = '2';\n" +
-            "service firebase.storage {\n" +
-            "  match /b/{bucket}/o {\n" +
-            "    match /tours/{tourId}/images/{fileName} {\n" +
-            "      allow read: if true;\n" +
-            "      allow write: if request.auth != null;\n" +
-            "    }\n" +
-            "    match /vehicles/{vehicleId}/image/{fileName} {\n" +
-            "      allow read: if true;\n" +
-            "      allow write: if request.auth != null;\n" +
-            "    }\n" +
-            "    match /landmarks/{landmarkId}/image/{fileName} {\n" +
-            "      allow read: if true;\n" +
-            "      allow write: if request.auth != null;\n" +
-            "    }\n" +
-            "  }\n" +
-            "}\n\n" +
-            "5. Click 'Publish'\n\n" +
-            "See FIREBASE_STORAGE_RULES_SETUP.md for detailed instructions.";
-          
-          console.error(detailedMessage);
-          throw new Error(
-            "Image upload blocked by Firebase Storage Rules. " +
-            "Please update your Storage rules in Firebase Console. " +
-            "Check the browser console for detailed instructions."
-          );
-        }
-        
-        throw new Error(`Failed to upload images: ${uploadError.message || "Unknown error. Please check Firebase Storage rules and authentication"}`);
+        finalImageUrls = [...existingImages, ...newImageUrls];
       }
+
+      // Process itinerary - split comma-separated activities and meals back into arrays
+      const processedItinerary = data.itinerary.map((day) => ({
+        ...day,
+        activities: day.activities[0] 
+          ? day.activities[0].split(",").map(a => a.trim()).filter(Boolean)
+          : day.activities,
+        meals: day.meals[0]
+          ? day.meals[0].split(",").map(m => m.trim()).filter(Boolean)
+          : day.meals,
+      }));
+
+      // Filter out empty inclusions
+      const processedInclusions = (data.inclusions || []).filter(inc => inc.trim().length > 0);
+
+      // Update tour with merged image URLs and processed data
+      await updateTour(tourId, {
+        ...(data as TourFormData),
+        images: finalImageUrls,
+        itinerary: processedItinerary,
+        inclusions: processedInclusions,
+      } as Partial<Tour>);
 
       toast({
         title: "Success",
-        description: "Tour created successfully",
+        description: "Tour updated successfully",
       });
 
       router.push("/admin/tours");
     } catch (error: any) {
-      console.error("Error creating tour:", error);
+      console.error("Error updating tour:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create tour",
+        description: error.message || "Failed to update tour",
         variant: "destructive",
       });
     } finally {
@@ -436,14 +315,33 @@ export default function AdminNewTourPage() {
     }
   }
 
+  if (fetchingTour) {
+    return (
+      <AdminProtectedRoute>
+        <Head>
+          <title>Edit Tour - CebuFlexi Admin</title>
+        </Head>
+        <AdminLayout>
+          <div className="space-y-6">
+            <Skeleton className="h-12 w-64" />
+            <div className="grid gap-6">
+              <Skeleton className="h-64 w-full" />
+              <Skeleton className="h-64 w-full" />
+            </div>
+          </div>
+        </AdminLayout>
+      </AdminProtectedRoute>
+    );
+  }
+
   return (
     <AdminProtectedRoute>
       <Head>
-        <title>New Tour - CebuFlexi Admin</title>
+        <title>Edit Tour - CebuFlexi Admin</title>
       </Head>
 
       <AdminLayout>
-        <form onSubmit={handleSubmit(onSubmit, onError)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Header */}
           <div className="flex items-center gap-4">
             <Button
@@ -455,14 +353,14 @@ export default function AdminNewTourPage() {
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex-1">
-              <h1 className="text-3xl font-bold tracking-tight">Create New Tour</h1>
+              <h1 className="text-3xl font-bold tracking-tight">Edit Tour</h1>
               <p className="text-muted-foreground mt-1">
-                Add a new tour package to your offerings
+                Update tour package details
               </p>
             </div>
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Create Tour
+              Update Tour
             </Button>
           </div>
 
@@ -491,7 +389,6 @@ export default function AdminNewTourPage() {
                   <Select
                     onValueChange={(value) => setValue("category", value as any)}
                     value={watch("category")}
-                    defaultValue="Beach"
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -642,22 +539,8 @@ export default function AdminNewTourPage() {
           {/* Images */}
           <Card>
             <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <CardTitle>Images *</CardTitle>
-                  <CardDescription>Upload tour images (Max 5MB each, JPEG/PNG/WebP)</CardDescription>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleTestImages}
-                  className="shrink-0"
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  Quick Upload
-                </Button>
-              </div>
+              <CardTitle>Images *</CardTitle>
+              <CardDescription>Upload tour images (Max 5MB each, JPEG/PNG/WebP)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div
@@ -716,13 +599,13 @@ export default function AdminNewTourPage() {
               </div>
               {imagePreviews.length > 0 && (
                 <p className="text-xs text-muted-foreground text-center">
-                  {imagePreviews.length} image{imagePreviews.length !== 1 ? "s" : ""} selected
+                  {imagePreviews.length} image{imagePreviews.length !== 1 ? "s" : ""} ({existingImages.length} existing, {imageFiles.length} new)
                 </p>
               )}
             </CardContent>
           </Card>
 
-          {/* Itinerary - Due to size, I'll create a simplified version */}
+          {/* Itinerary */}
           <Card>
             <CardHeader>
               <CardTitle>Day-by-Day Itinerary *</CardTitle>
@@ -746,35 +629,19 @@ export default function AdminNewTourPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="space-y-2">
-                      <Input
-                        {...register(`itinerary.${index}.title`)}
-                        placeholder="Day title"
-                      />
-                      {errors.itinerary?.[index]?.title && (
-                        <p className="text-sm text-destructive">
-                          {errors.itinerary[index]?.title?.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Textarea
-                        {...register(`itinerary.${index}.activities.0`)}
-                        placeholder="Activities (comma-separated)"
-                        rows={2}
-                      />
-                      {errors.itinerary?.[index]?.activities && (
-                        <p className="text-sm text-destructive">
-                          {errors.itinerary[index]?.activities?.message || "At least one activity is required"}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Input
-                        {...register(`itinerary.${index}.meals.0`)}
-                        placeholder="Meals (comma-separated)"
-                      />
-                    </div>
+                    <Input
+                      {...register(`itinerary.${index}.title`)}
+                      placeholder="Day title"
+                    />
+                    <Textarea
+                      {...register(`itinerary.${index}.activities.0`)}
+                      placeholder="Activities (comma-separated)"
+                      rows={2}
+                    />
+                    <Input
+                      {...register(`itinerary.${index}.meals.0`)}
+                      placeholder="Meals (comma-separated)"
+                    />
                   </CardContent>
                 </Card>
               ))}
@@ -835,5 +702,4 @@ export default function AdminNewTourPage() {
     </AdminProtectedRoute>
   );
 }
-
 

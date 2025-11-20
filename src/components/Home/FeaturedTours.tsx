@@ -35,12 +35,22 @@ export function FeaturedTours() {
             {featuredTours.map((tour) => (
               <motion.div key={tour.id} variants={staggerItem}>
                 <Card className="overflow-hidden hover:shadow-xl transition-shadow duration-300 group">
-                  <div className="relative h-64 overflow-hidden">
-                    <img
-                      src={tour.images[0]}
-                      alt={tour.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
+                  <div className="relative h-64 overflow-hidden bg-gray-200">
+                    {tour.images && tour.images.length > 0 && tour.images[0] ? (
+                      <img
+                        src={tour.images[0]}
+                        alt={tour.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400"><span>No Image</span></div>';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                        <span>No Image</span>
+                      </div>
+                    )}
                     <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">{tour.category}</Badge>
                   </div>
                   <CardHeader>

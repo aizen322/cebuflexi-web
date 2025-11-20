@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { GetServerSideProps } from "next";
 import { 
   collection, 
   query, 
@@ -12,6 +13,7 @@ import {
 import { db } from "@/lib/firebase";
 import { AdminProtectedRoute } from "@/components/Auth/AdminProtectedRoute";
 import { AdminLayout } from "@/components/Admin/AdminLayout";
+import { requireAdmin, ServerUser } from "@/lib/server-auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,7 +50,11 @@ interface RecentBooking {
   createdAt: Date;
 }
 
-export default function AdminDashboardPage() {
+interface AdminDashboardPageProps {
+  serverUser: ServerUser;
+}
+
+export default function AdminDashboardPage({ serverUser }: AdminDashboardPageProps) {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     pendingBookings: 0,
@@ -374,5 +380,22 @@ export default function AdminDashboardPage() {
     </AdminProtectedRoute>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  try {
+    const serverUser = requireAdmin(context);
+    
+    return {
+      props: {
+        serverUser,
+      },
+    };
+  } catch (error) {
+    // Redirect already handled by requireAdmin
+    return {
+      props: {},
+    };
+  }
+};
 
 

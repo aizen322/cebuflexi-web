@@ -24,6 +24,7 @@ interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
+  isAdmin: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -33,6 +34,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  isAdmin: false,
   signIn: async () => {},
   signUp: async () => {},
   signInWithGoogle: async () => {},
@@ -45,6 +47,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper function to set session cookie
+  const setSessionCookie = async (firebaseUser: User) => {
+    try {
+      const token = await firebaseUser.getIdToken();
+      const response = await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'set', token }),
+      });
+
+      if (!response.ok) {
+        console.warn('Failed to set session cookie:', await response.text());
+      }
+    } catch (error) {
+      console.warn('Error setting session cookie:', error);
+      // Non-critical error, continue
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
@@ -52,6 +75,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Get ID token result to fetch custom claims (role)
           const tokenResult = await firebaseUser.getIdTokenResult();
           const role = (tokenResult.claims.role as "user" | "admin" | "moderator") || "user";
+          
+          // Set session cookie (for server-side auth)
+          await setSessionCookie(firebaseUser);
           
           // Try to get user profile from Firestore with error handling
           let userData: any = null;
@@ -127,7 +153,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
+    const { user: firebaseUser } = await signInWithEmailAndPassword(auth, email, password);
+    // Session cookie will be set by onAuthStateChanged
+    // But we also set it here to ensure it's set immediately
+    await setSessionCookie(firebaseUser);
   };
 
   const signUp = async (email: string, password: string, displayName: string) => {
@@ -153,11 +182,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: new Date(),
       role: "user",
     });
+
+    // Set session cookie
+    await setSessionCookie(firebaseUser);
   };
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     const { user: firebaseUser } = await signInWithPopup(auth, provider);
+    
+    // Set session cookie
+    await setSessionCookie(firebaseUser);
     
     // Check if user profile exists, create if not (with error handling)
     if (db) {
@@ -189,12 +224,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
+    // Clear session cookie
+    try {
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action: 'clear' }),
+      });
+    } catch (error) {
+      console.warn('Error clearing session cookie:', error);
+    }
+    
+    // Sign out from Firebase
     await signOut(auth);
+    
+    // Redirect to home page
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   };
+
+  const isAdmin = user?.role === 'admin';
 
   const value = {
     user,
     loading,
+    isAdmin,
     signIn,
     signUp,
     signInWithGoogle,

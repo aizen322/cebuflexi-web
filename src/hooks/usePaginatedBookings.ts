@@ -35,10 +35,12 @@ export interface PaginatedBookingsResult {
 }
 
 const PAGE_SIZE = 20;
+const SEARCH_LIMIT = 1000; // Maximum bookings to fetch when searching
 
 /**
  * Hook for paginated bookings with server-side filtering
  * Supports real-time updates for the first page only
+ * When searchTerm is provided, fetches all matching bookings (up to SEARCH_LIMIT)
  */
 export function usePaginatedBookings(
   filters: BookingFilters = {},
@@ -52,7 +54,7 @@ export function usePaginatedBookings(
   const [totalCount, setTotalCount] = useState(0);
 
   const buildQuery = useCallback(
-    (lastDocument?: DocumentSnapshot | null): Query => {
+    (lastDocument?: DocumentSnapshot | null, isSearchMode = false): Query => {
       const constraints: QueryConstraint[] = [];
 
       // Apply filters
@@ -71,12 +73,16 @@ export function usePaginatedBookings(
       // Always order by createdAt descending
       constraints.push(orderBy("createdAt", "desc"));
 
-      // Pagination
-      if (lastDocument) {
-        constraints.push(startAfter(lastDocument));
+      // For search mode, fetch all bookings (up to limit), otherwise paginate
+      if (isSearchMode) {
+        constraints.push(limit(SEARCH_LIMIT));
+      } else {
+        // Pagination
+        if (lastDocument) {
+          constraints.push(startAfter(lastDocument));
+        }
+        constraints.push(limit(PAGE_SIZE));
       }
-
-      constraints.push(limit(PAGE_SIZE));
 
       return query(collection(db, COLLECTIONS.BOOKINGS), ...constraints);
     },
@@ -92,15 +98,18 @@ export function usePaginatedBookings(
           setError(null);
         }
 
-        const q = buildQuery(isLoadMore ? lastDoc : null);
+        // Check if we're in search mode
+        const isSearchMode = !!filters.searchTerm && filters.searchTerm.trim().length > 0;
+
+        const q = buildQuery(isLoadMore ? lastDoc : null, isSearchMode && !isLoadMore);
         const snapshot = await getDocs(q);
 
         const newBookings = snapshot.docs.map(transformBookingDoc);
 
         // Client-side search filter (for search term)
         let filteredBookings = newBookings;
-        if (filters.searchTerm) {
-          const term = filters.searchTerm.toLowerCase();
+        if (isSearchMode) {
+          const term = filters.searchTerm!.toLowerCase().trim();
           filteredBookings = newBookings.filter(
             (b) =>
               b.userName.toLowerCase().includes(term) ||
@@ -109,7 +118,8 @@ export function usePaginatedBookings(
           );
         }
 
-        if (isLoadMore) {
+        if (isLoadMore && !isSearchMode) {
+          // Only allow load more in non-search mode
           setBookings((prev) => [...prev, ...filteredBookings]);
         } else {
           setBookings(filteredBookings);
@@ -117,9 +127,15 @@ export function usePaginatedBookings(
         }
 
         // Update pagination state
-        const lastVisible = snapshot.docs[snapshot.docs.length - 1];
-        setLastDoc(lastVisible || null);
-        setHasMore(snapshot.docs.length === PAGE_SIZE);
+        if (isSearchMode) {
+          // In search mode, don't allow pagination (show all results)
+          setLastDoc(null);
+          setHasMore(false);
+        } else {
+          const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+          setLastDoc(lastVisible || null);
+          setHasMore(snapshot.docs.length === PAGE_SIZE);
+        }
       } catch (err) {
         console.error("Error fetching bookings:", err);
         setError(err instanceof Error ? err.message : "Failed to load bookings");
@@ -141,38 +157,35 @@ export function usePaginatedBookings(
     await fetchBookings(false);
   }, [fetchBookings]);
 
-  // Initial load and filter changes
+  // Initial load and filter changes (excluding searchTerm to prevent auto-search)
   useEffect(() => {
     setLastDoc(null);
     setHasMore(true);
     fetchBookings(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.status, filters.bookingType, filters.userId, filters.searchTerm]);
+  }, [filters.status, filters.bookingType, filters.userId]);
+  
+  // Separate effect for searchTerm - triggers when search is performed or cleared
+  useEffect(() => {
+    setLastDoc(null);
+    setHasMore(true);
+    fetchBookings(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.searchTerm]);
 
   // Real-time updates for first page only (optional)
+  // Disabled when in search mode to avoid conflicts
   useEffect(() => {
     if (!enableRealtime) return;
+    if (filters.searchTerm && filters.searchTerm.trim().length > 0) return; // Skip real-time in search mode
 
-    const q = buildQuery(null);
+    const q = buildQuery(null, false);
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
         const newBookings = snapshot.docs.map(transformBookingDoc);
-
-        // Apply search filter
-        let filteredBookings = newBookings;
-        if (filters.searchTerm) {
-          const term = filters.searchTerm.toLowerCase();
-          filteredBookings = newBookings.filter(
-            (b) =>
-              b.userName.toLowerCase().includes(term) ||
-              b.userEmail.toLowerCase().includes(term) ||
-              b.id.toLowerCase().includes(term)
-          );
-        }
-
-        setBookings(filteredBookings);
-        setTotalCount(filteredBookings.length);
+        setBookings(newBookings);
+        setTotalCount(newBookings.length);
         setError(null);
       },
       (err) => {
@@ -194,4 +207,6 @@ export function usePaginatedBookings(
     totalCount,
   };
 }
+
+
 

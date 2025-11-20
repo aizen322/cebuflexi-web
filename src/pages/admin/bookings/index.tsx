@@ -23,13 +23,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Eye, Download, Filter, Loader2 } from "lucide-react";
+import { Search, Eye, Download, Filter, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { usePaginatedBookings } from "@/hooks/usePaginatedBookings";
 
 export default function AdminBookingsPage() {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [activeSearchTerm, setActiveSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
@@ -37,13 +38,22 @@ export default function AdminBookingsPage() {
     () => ({
       status: statusFilter,
       bookingType: typeFilter,
-      searchTerm,
+      searchTerm: activeSearchTerm || undefined,
     }),
-    [statusFilter, typeFilter, searchTerm]
+    [statusFilter, typeFilter, activeSearchTerm]
   );
 
   const { bookings, loading, hasMore, loadMore } =
     usePaginatedBookings(filters, true);
+
+  const handleSearch = () => {
+    setActiveSearchTerm(searchInput.trim());
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setActiveSearchTerm("");
+  };
 
   const exportToCSV = () => {
     const csvData = bookings.map((b) => ({
@@ -98,14 +108,40 @@ export default function AdminBookingsPage() {
             <CardHeader>
               <div className="flex flex-col md:flex-row gap-4">
                 {/* Search */}
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name, email, or ID..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
+                <div className="relative flex-1 flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search by name, email, or ID..."
+                      value={searchInput}
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          handleSearch();
+                        }
+                      }}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSearch}
+                    disabled={loading}
+                    className="shrink-0"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </Button>
+                  {activeSearchTerm && (
+                    <Button
+                      onClick={handleClearSearch}
+                      variant="outline"
+                      disabled={loading}
+                      className="shrink-0"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Clear
+                    </Button>
+                  )}
                 </div>
 
                 {/* Status Filter */}
@@ -229,7 +265,11 @@ export default function AdminBookingsPage() {
               {/* Results count */}
               {!loading && bookings.length > 0 && (
                 <div className="mt-4 text-sm text-muted-foreground text-center">
-                  Showing {bookings.length} bookings{hasMore ? " (more available)" : ""}
+                  {activeSearchTerm ? (
+                    <>Showing {bookings.length} search result{bookings.length !== 1 ? "s" : ""} for "{activeSearchTerm}"</>
+                  ) : (
+                    <>Showing {bookings.length} bookings{hasMore ? " (more available)" : ""}</>
+                  )}
                 </div>
               )}
             </CardContent>

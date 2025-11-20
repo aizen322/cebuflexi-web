@@ -56,14 +56,25 @@ function getClientIP(request: NextRequest): string {
   return 'unknown';
 }
 
+function getTokenFromRequest(request: NextRequest): string | null {
+  // First, try to get token from __session cookie
+  const sessionCookie = request.cookies.get('__session')?.value;
+  if (sessionCookie) {
+    return sessionCookie;
+  }
+
+  // Fallback to Authorization header
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+
+  return null;
+}
+
 async function verifyFirebaseToken(request: NextRequest): Promise<{ valid: boolean; user?: any }> {
   try {
-    const authHeader = request.headers.get('authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return { valid: false };
-    }
-
-    const token = authHeader.substring(7);
+    const token = getTokenFromRequest(request);
     
     if (!token) {
       return { valid: false };
@@ -79,13 +90,15 @@ async function verifyFirebaseToken(request: NextRequest): Promise<{ valid: boole
     // Extract user info and role from the decoded token
     const user = verification.user;
     const role = user.customClaims?.role || 'user';
+    const isAdmin = role === 'admin';
     
     return { 
       valid: true, 
       user: { 
         uid: user.uid, 
         email: user.email,
-        role: role 
+        role: role,
+        isAdmin: isAdmin
       } 
     };
   } catch (error) {
@@ -158,17 +171,18 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  // Check if route requires authentication
-  const requiresAuth = Object.keys(protectedRoutes).some(route => 
+  // Check if route requires authentication (admin routes)
+  const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
+  const isProtectedRoute = Object.keys(protectedRoutes).some(route => 
     pathname.startsWith(route)
   );
 
-  if (requiresAuth) {
-    // Check for protected API routes
-    if (pathname.startsWith('/api/')) {
-      const tokenVerification = await verifyFirebaseToken(request);
-      
-      if (!tokenVerification.valid) {
+  if (isAdminRoute || isProtectedRoute) {
+    const tokenVerification = await verifyFirebaseToken(request);
+    
+    if (!tokenVerification.valid) {
+      // For API routes, return 401
+      if (pathname.startsWith('/api/')) {
         return new Response(
           JSON.stringify({ error: 'Unauthorized' }), 
           { 
@@ -177,10 +191,23 @@ export async function middleware(request: NextRequest) {
           }
         );
       }
+      
+      // For page routes, redirect to login
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
+    }
 
-      // Check role-based access for admin routes
-      if (pathname.startsWith('/api/admin')) {
-        if (tokenVerification.user?.role !== 'admin') {
+    // Add user info to request headers for getServerSideProps
+    response.headers.set('x-user-id', tokenVerification.user.uid);
+    response.headers.set('x-user-email', tokenVerification.user.email || '');
+    response.headers.set('x-is-admin', tokenVerification.user.isAdmin ? 'true' : 'false');
+
+    // Check role-based access for admin routes
+    if (isAdminRoute) {
+      if (!tokenVerification.user.isAdmin) {
+        // For API routes, return 403
+        if (pathname.startsWith('/api/')) {
           return new Response(
             JSON.stringify({ error: 'Forbidden - Admin access required' }), 
             { 
@@ -189,11 +216,10 @@ export async function middleware(request: NextRequest) {
             }
           );
         }
+        
+        // For page routes, redirect to unauthorized
+        return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
-    } else {
-      // For page routes, authentication is handled by ProtectedRoute component
-      // The middleware will let the request through and let the component handle auth
-      // This allows for better UX with dialog-based authentication
     }
   }
 

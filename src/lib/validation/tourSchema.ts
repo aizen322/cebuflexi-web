@@ -21,7 +21,7 @@ export const tourSchema = z.object({
   }).refine(data => data.max >= data.min, {
     message: "Maximum must be greater than or equal to minimum",
   }),
-  images: z.array(z.string().url("Invalid image URL")).min(1, "At least one image is required"),
+  images: z.array(z.string().url("Invalid image URL")).optional(), // Validated manually during file upload
   itinerary: z.array(dayItinerarySchema).min(1, "At least one day itinerary is required"),
   inclusions: z.array(z.string()).min(1, "At least one inclusion is required"),
   available: z.boolean(),

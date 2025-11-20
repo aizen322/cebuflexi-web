@@ -33,7 +33,34 @@ export async function uploadImage(
       },
       (error) => {
         // Error callback
-        reject(error);
+        console.error("Upload error:", error);
+        console.error("Error code:", error.code);
+        console.error("Error message:", error.message);
+        
+        // Check for CORS/network errors
+        if (error.message && (
+          error.message.includes("CORS") || 
+          error.message.includes("blocked") ||
+          error.message.includes("preflight") ||
+          error.message.includes("ERR_FAILED")
+        )) {
+          reject(new Error(
+            "CORS Error: Firebase Storage Security Rules are blocking the upload. " +
+            "Please update your Storage rules in Firebase Console to allow authenticated uploads."
+          ));
+          return;
+        }
+        
+        // Provide more helpful error messages
+        if (error.code === 'storage/unauthorized') {
+          reject(new Error("You don't have permission to upload files. Please check Firebase Storage rules."));
+        } else if (error.code === 'storage/canceled') {
+          reject(new Error("Upload was canceled."));
+        } else if (error.code === 'storage/unknown') {
+          reject(new Error("An unknown error occurred. Please check your internet connection and Firebase Storage configuration."));
+        } else {
+          reject(error);
+        }
       },
       async () => {
         // Complete callback
@@ -54,13 +81,37 @@ export async function uploadTourImages(
   onProgress?: (index: number, progress: number) => void
 ): Promise<string[]> {
   const uploadPromises = files.map((file, index) => {
-    const path = `tours/${tourId}/${Date.now()}-${file.name}`;
+    // Use new path format: tours/{tourId}/images/{filename}
+    const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const path = `tours/${tourId}/images/${Date.now()}-${sanitizedFilename}`;
     return uploadImage(file, path, (progress) => {
       onProgress?.(index, progress);
     });
   });
 
   return Promise.all(uploadPromises);
+}
+
+export async function uploadVehicleImage(
+  file: File,
+  vehicleId: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  // Use path format: vehicles/{vehicleId}/image/{filename}
+  const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const path = `vehicles/${vehicleId}/image/${Date.now()}-${sanitizedFilename}`;
+  return uploadImage(file, path, onProgress);
+}
+
+export async function uploadLandmarkImage(
+  file: File,
+  landmarkId: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
+  // Use path format: landmarks/{landmarkId}/image/{filename}
+  const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const path = `landmarks/${landmarkId}/image/${Date.now()}-${sanitizedFilename}`;
+  return uploadImage(file, path, onProgress);
 }
 
 export async function deleteImage(imageUrl: string): Promise<void> {

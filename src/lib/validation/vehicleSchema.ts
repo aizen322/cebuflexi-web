@@ -3,7 +3,7 @@ import { z } from "zod";
 export const vehicleSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
   type: z.enum(["Sedan", "SUV", "Van"]),
-  image: z.string().url("Invalid image URL"),
+  image: z.string().url("Invalid image URL").optional(), // Validated manually during upload
   pricePerDay: z.number().positive("Price must be positive"),
   capacity: z.number().int().positive("Capacity must be positive"),
   transmission: z.enum(["Automatic", "Manual"]),

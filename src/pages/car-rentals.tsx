@@ -224,12 +224,22 @@ export default function CarRentalsPage() {
                     {filteredVehicles.map((vehicle) => (
                       <Card key={vehicle.id} className="overflow-hidden hover:shadow-xl transition-shadow group">
                         <div className="flex flex-col md:flex-row">
-                          <div className="md:w-1/3 h-64 md:h-auto relative">
-                            <img
-                              src={vehicle.image}
-                              alt={`${vehicle.type} - Car rental in Cebu`}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
+                          <div className="md:w-1/3 h-64 md:h-auto relative bg-gray-200">
+                            {vehicle.image ? (
+                              <img
+                                src={vehicle.image}
+                                alt={`${vehicle.type} - Car rental in Cebu`}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400"><span>No Image</span></div>';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
+                                <span>No Image</span>
+                              </div>
+                            )}
                             {vehicle.withDriver && (
                               <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">
                                 With Driver Available
