@@ -154,7 +154,10 @@ export default function AdminNewLandmarkPage() {
       const landmarkData: Omit<Landmark, "id"> = {
         name: data.name,
         description: data.description,
-        location: data.location,
+        location: {
+          lat: data.location.lat,
+          lng: data.location.lng,
+        },
         estimatedDuration: data.estimatedDuration,
         image: imageUrl,
         category: data.category,

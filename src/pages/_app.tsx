@@ -5,7 +5,7 @@ import "@/styles/globals.css";
 import type { AppProps } from "next/app";
 import { Loader2 } from "lucide-react";
 
-function AppWithAuth({ Component, pageProps }: AppProps) {
+function AppWithAuth(props: AppProps) {
   const { loading } = useAuth();
 
   if (loading) {
@@ -19,6 +19,7 @@ function AppWithAuth({ Component, pageProps }: AppProps) {
     );
   }
 
+  const { Component, pageProps } = props;
   return (
     <>
       <Component {...pageProps} />
@@ -27,11 +28,11 @@ function AppWithAuth({ Component, pageProps }: AppProps) {
   );
 }
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function App(props: AppProps) {
   return (
     <AuthProvider>
       <ContentDataProvider>
-        <AppWithAuth Component={Component} pageProps={pageProps} />
+        <AppWithAuth {...props} />
       </ContentDataProvider>
     </AuthProvider>
   );

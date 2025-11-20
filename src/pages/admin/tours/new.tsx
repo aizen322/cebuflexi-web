@@ -309,7 +309,10 @@ export default function AdminNewTourPage() {
         price: data.price,
         duration: data.duration,
         location: data.location,
-        groupSize: data.groupSize,
+        groupSize: {
+          min: data.groupSize.min,
+          max: data.groupSize.max,
+        },
         images: [], // Create with empty images first
         itinerary: processedItinerary,
         inclusions: processedInclusions,

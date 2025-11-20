@@ -5,29 +5,46 @@ const SESSION_COOKIE_NAME = '__session';
 const SESSION_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
 /**
- * Get token from request (cookie or Authorization header)
+ * Get token from NextApiRequest (Pages Router API route)
  */
-export function getTokenFromRequest(req: NextApiRequest | NextRequest): string | null {
-  if ('cookies' in req) {
-    // NextApiRequest
-    const token = req.cookies[SESSION_COOKIE_NAME];
-    if (token) return token;
-  } else {
-    // NextRequest
-    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
-    if (token) return token;
-  }
+function getTokenFromNextApiRequest(req: NextApiRequest): string | null {
+  const token = req.cookies[SESSION_COOKIE_NAME];
+  if (token) return token;
 
-  // Fallback to Authorization header
-  const authHeader = 'headers' in req 
-    ? (req as NextApiRequest).headers.authorization 
-    : (req as NextRequest).headers.get('authorization');
-  
+  const authHeader = req.headers.authorization;
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.substring(7);
   }
 
   return null;
+}
+
+/**
+ * Get token from NextRequest (Middleware)
+ */
+function getTokenFromNextRequest(req: NextRequest): string | null {
+  const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+  if (token) return token;
+
+  const authHeader = req.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+
+  return null;
+}
+
+/**
+ * Get token from request (cookie or Authorization header)
+ */
+export function getTokenFromRequest(req: NextApiRequest | NextRequest): string | null {
+  // Check if it's NextApiRequest by checking for the cookies object structure
+  if (req && typeof req === 'object' && 'cookies' in req && typeof req.cookies === 'object' && !('get' in req.cookies)) {
+    return getTokenFromNextApiRequest(req as NextApiRequest);
+  }
+  
+  // Otherwise it's NextRequest
+  return getTokenFromNextRequest(req as NextRequest);
 }
 
 /**
