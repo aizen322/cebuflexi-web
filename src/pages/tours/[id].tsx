@@ -180,9 +180,9 @@ export default function TourDetailPage() {
       
       // Validation logic
       if (existingBookings.hasPending || existingBookings.hasConfirmed) {
-        // Filter for pending guest bookings
+        // Filter for pending guest bookings (identified via guest info on tour bookings)
         const pendingGuestBookings = existingBookings.bookings.filter(
-          b => b.status === 'pending' && (b.bookingType === 'guest' || (b.guestName && b.bookingType === 'tour'))
+          (b) => b.status === "pending" && b.bookingType === "tour" && Boolean(b.guestName)
         );
         
         const isGuestBooking = bookingData.bookingType === 'guest';
