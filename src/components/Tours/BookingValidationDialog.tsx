@@ -14,6 +14,8 @@ interface BookingValidationDialogProps {
   pendingCount: number;
   confirmedCount: number;
   bookings: any[];
+  forceAllow?: boolean;
+  customMessage?: string;
 }
 
 export function BookingValidationDialog({
@@ -24,7 +26,9 @@ export function BookingValidationDialog({
   hasConfirmed,
   pendingCount,
   confirmedCount,
-  bookings
+  bookings,
+  forceAllow = false,
+  customMessage
 }: BookingValidationDialogProps) {
   const router = useRouter();
   const formatDate = (date: Date) => {
@@ -35,19 +39,19 @@ export function BookingValidationDialog({
     });
   };
 
-  const canProceed = !hasPending; // Only allow if no pending bookings
+  const canProceed = !hasPending || forceAllow;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {hasPending ? (
+            {hasPending && !forceAllow ? (
               <>
                 <AlertTriangle className="h-5 w-5 text-orange-500" />
                 Pending Booking Found
               </>
-            ) : hasConfirmed ? (
+            ) : hasConfirmed || (hasPending && forceAllow) ? (
               <>
                 <CheckCircle className="h-5 w-5 text-blue-500" />
                 Existing Bookings Reminder
@@ -60,23 +64,34 @@ export function BookingValidationDialog({
             )}
           </DialogTitle>
           <DialogDescription>
-            {hasPending 
+            {customMessage 
+              ? customMessage
+              : hasPending && !forceAllow
               ? "You have pending tour bookings that need to be resolved first."
-              : hasConfirmed
-              ? "You have confirmed tour bookings. Please review before proceeding."
+              : hasConfirmed || (hasPending && forceAllow)
+              ? "You have existing tour bookings. Please review before proceeding."
               : "You can proceed with your new booking."
             }
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
-          {hasPending && (
+          {hasPending && !forceAllow && (
             <Alert>
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>
-                <strong>Cannot proceed:</strong> You have {pendingCount} pending tour booking{pendingCount > 1 ? 's' : ''} that must be confirmed or cancelled before making a new booking.
+                <strong>Cannot proceed:</strong> {customMessage || `You have ${pendingCount} pending tour booking${pendingCount > 1 ? 's' : ''} that must be confirmed or cancelled before making a new booking.`}
               </AlertDescription>
             </Alert>
+          )}
+
+          {hasPending && forceAllow && (
+             <Alert>
+               <CheckCircle className="h-4 w-4" />
+               <AlertDescription>
+                 <strong>Note:</strong> You have {pendingCount} pending tour booking{pendingCount > 1 ? 's' : ''}. Since this is a booking for someone else, you can proceed (limit: 3 pending guest bookings).
+               </AlertDescription>
+             </Alert>
           )}
 
           {hasConfirmed && (
@@ -125,9 +140,9 @@ export function BookingValidationDialog({
           <div className="flex justify-end gap-3 pt-4">
             <Button 
               variant="outline" 
-              onClick={hasPending ? () => router.push("/account/bookings") : onClose}
+              onClick={hasPending && !forceAllow ? () => router.push("/account/bookings") : onClose}
             >
-              {hasPending ? "Review Bookings" : "Cancel"}
+              {hasPending && !forceAllow ? "Review Bookings" : "Cancel"}
             </Button>
             {canProceed && (
               <Button onClick={onProceed} className="bg-blue-600 hover:bg-blue-700">

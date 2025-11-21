@@ -58,10 +58,14 @@ interface BookingDetails {
   itineraryDetails?: string;
 }
 
+import { checkVehicleAvailability } from "@/services/vehicleAvailabilityService";
+import { useVehiclesData } from "@/contexts/ContentDataContext";
+
 export default function AdminBookingDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { toast } = useToast();
+  const { data: vehicles } = useVehiclesData(); // Fetch vehicles for stock count check
   
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -132,6 +136,28 @@ export default function AdminBookingDetailPage() {
     
     setActionLoading(true);
     try {
+      // Optional: Check availability before confirming if it's a vehicle booking
+      if (booking.bookingType === "vehicle" && booking.vehicleId) {
+        const vehicle = vehicles.find(v => v.id === booking.vehicleId);
+        if (vehicle) {
+          const bookedCount = await checkVehicleAvailability(
+            booking.vehicleId, 
+            booking.startDate, 
+            booking.endDate
+          );
+          
+          if (vehicle.stockCount - bookedCount <= 0) {
+            const confirmOverride = window.confirm(
+              `Warning: This vehicle appears to be fully booked for these dates (${bookedCount}/${vehicle.stockCount} booked). Confirm anyway?`
+            );
+            if (!confirmOverride) {
+              setActionLoading(false);
+              return;
+            }
+          }
+        }
+      }
+
       const user = auth.currentUser;
       if (!user) throw new Error("Not authenticated");
 

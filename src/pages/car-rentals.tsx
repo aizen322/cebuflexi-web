@@ -12,9 +12,15 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Users, Fuel, Settings, Check, Car, Search } from "lucide-react";
+import { Users, Fuel, Settings, Check, Car, Search, Calendar as CalendarIcon } from "lucide-react";
 import { Vehicle } from "@/types";
 import { useVehiclesData } from "@/contexts/ContentDataContext";
+import { getAvailableVehicles, AvailabilityResult } from "@/services/vehicleAvailabilityService";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, addDays } from "date-fns";
+import { cn } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 
 export default function CarRentalsPage() {
   const router = useRouter();
@@ -31,10 +37,41 @@ export default function CarRentalsPage() {
     fuelType: "all"
   });
   const [searchQuery, setSearchQuery] = useState<string>("");
+  
+  // Date based availability state
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(),
+    to: addDays(new Date(), 1),
+  });
+  const [availability, setAvailability] = useState<Record<string, AvailabilityResult>>({});
+  const [isCalculating, setIsCalculating] = useState(false);
 
   useEffect(() => {
     setFilteredVehicles(vehicles);
   }, [vehicles]);
+
+  // Fetch availability when dates or vehicles change
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!vehicles.length || !dateRange?.from || !dateRange?.to) return;
+      
+      setIsCalculating(true);
+      try {
+        const results = await getAvailableVehicles(vehicles, dateRange.from, dateRange.to);
+        const availMap: Record<string, AvailabilityResult> = {};
+        results.forEach(r => {
+          availMap[r.vehicleId] = r;
+        });
+        setAvailability(availMap);
+      } catch (error) {
+        console.error("Failed to fetch availability", error);
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    fetchAvailability();
+  }, [vehicles, dateRange]);
 
   // Auto-apply filters when search query changes
   useEffect(() => {
@@ -117,6 +154,50 @@ export default function CarRentalsPage() {
                     <CardTitle>Filter Vehicles</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-6">
+                    <div>
+                      <Label className="text-base font-semibold mb-3 block">Rental Dates</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            id="date"
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !dateRange && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {dateRange?.from ? (
+                              dateRange.to ? (
+                                <>
+                                  {format(dateRange.from, "LLL dd, y")} -{" "}
+                                  {format(dateRange.to, "LLL dd, y")}
+                                </>
+                              ) : (
+                                format(dateRange.from, "LLL dd, y")
+                              )
+                            ) : (
+                              <span>Pick dates</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            initialFocus
+                            mode="range"
+                            defaultMonth={dateRange?.from}
+                            selected={dateRange}
+                            onSelect={setDateRange}
+                            numberOfMonths={2}
+                            disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Select dates to check real-time availability
+                      </p>
+                    </div>
+
                     <div>
                       <Label className="text-base font-semibold mb-3 block">Search Vehicles</Label>
                       <div className="relative">
@@ -245,9 +326,25 @@ export default function CarRentalsPage() {
                                 With Driver Available
                               </Badge>
                             )}
-                            <Badge className="absolute top-4 right-4 bg-green-600 text-white transition-transform duration-300 group-hover:scale-110">
-                              {vehicle.stockCount} Available
-                            </Badge>
+                            
+                            {isCalculating ? (
+                              <Badge className="absolute top-4 right-4 bg-gray-500 text-white animate-pulse">
+                                Checking...
+                              </Badge>
+                            ) : availability[vehicle.id] ? (
+                              <Badge className={cn(
+                                "absolute top-4 right-4 text-white transition-transform duration-300 group-hover:scale-110",
+                                availability[vehicle.id].availableCount > 0 ? "bg-green-600" : "bg-red-600"
+                              )}>
+                                {availability[vehicle.id].availableCount > 0 
+                                  ? `${availability[vehicle.id].availableCount} Available` 
+                                  : "Fully Booked"}
+                              </Badge>
+                            ) : (
+                              <Badge className="absolute top-4 right-4 bg-gray-500 text-white">
+                                Check Dates
+                              </Badge>
+                            )}
                           </div>
 
                           <div className="md:w-2/3 p-6 flex flex-col justify-between">
@@ -301,8 +398,9 @@ export default function CarRentalsPage() {
                                 variant="outline"
                                 className="flex-1 bg-white text-gray-900 border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 hover:scale-105"
                                 onClick={() => router.push(`/car-rentals/booking/${vehicle.id}`)}
+                                disabled={!isCalculating && availability[vehicle.id] && availability[vehicle.id].availableCount === 0}
                               >
-                                View Details
+                                {availability[vehicle.id]?.availableCount === 0 ? "Not Available" : "View Details"}
                               </Button>
                             </div>
                           </div>

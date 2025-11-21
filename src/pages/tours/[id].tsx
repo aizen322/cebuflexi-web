@@ -177,8 +177,32 @@ export default function TourDetailPage() {
 
       // Check for existing bookings first
       const existingBookings = await checkUserPendingBookings(user.uid);
+      
+      // Validation logic
       if (existingBookings.hasPending || existingBookings.hasConfirmed) {
-        setValidationData(existingBookings);
+        // Filter for pending guest bookings
+        const pendingGuestBookings = existingBookings.bookings.filter(
+          b => b.status === 'pending' && (b.bookingType === 'guest' || (b.guestName && b.bookingType === 'tour'))
+        );
+        
+        const isGuestBooking = bookingData.bookingType === 'guest';
+        let forceAllow = false;
+        let customMessage = "";
+
+        if (isGuestBooking) {
+          // Allow up to 3 pending guest bookings
+          if (existingBookings.hasPending && pendingGuestBookings.length < 3) {
+            forceAllow = true;
+          } else if (pendingGuestBookings.length >= 3) {
+             customMessage = `You have reached the limit of 3 pending guest bookings. Please wait for confirmation or cancel existing bookings.`;
+          }
+        }
+
+        setValidationData({
+          ...existingBookings,
+          forceAllow,
+          customMessage
+        });
         setShowValidationDialog(true);
         return;
       }
@@ -610,6 +634,8 @@ export default function TourDetailPage() {
         pendingCount={validationData?.pendingCount || 0}
         confirmedCount={validationData?.confirmedCount || 0}
         bookings={validationData?.bookings || []}
+        forceAllow={validationData?.forceAllow}
+        customMessage={validationData?.customMessage}
       />
     </>
   );

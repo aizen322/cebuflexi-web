@@ -1,5 +1,5 @@
 import { motion, Variants } from "framer-motion";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 interface FadeInProps {
   children: ReactNode;
@@ -16,6 +16,13 @@ export function FadeIn({
   direction = "up",
   className = "",
 }: FadeInProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    // Ensure animation triggers on mount/refresh
+    setIsMounted(true);
+  }, []);
+
   const variants: Variants = {
     hidden: {
       opacity: 0,
@@ -38,6 +45,7 @@ export function FadeIn({
     <motion.div
       variants={variants}
       initial="hidden"
+      animate={isMounted ? "visible" : "hidden"}
       whileInView="visible"
       viewport={{ once: true, amount: 0.1 }}
       className={className}

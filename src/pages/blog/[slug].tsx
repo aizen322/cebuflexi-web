@@ -184,7 +184,7 @@ export default function BlogPostPage() {
                 </div>
 
                 <div 
-                  className="prose prose-lg max-w-none"
+                  className="article-content"
                   dangerouslySetInnerHTML={{ __html: post.content }}
                 />
 

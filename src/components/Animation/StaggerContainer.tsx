@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 interface StaggerContainerProps {
   children: ReactNode;
@@ -29,6 +29,13 @@ export function StaggerContainer({
   staggerChildren = 0.1,
   className = "",
 }: StaggerContainerProps) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    // Ensure animation triggers on mount/refresh
+    setIsMounted(true);
+  }, []);
+
   return (
     <motion.div
       variants={{
@@ -41,6 +48,7 @@ export function StaggerContainer({
         },
       }}
       initial="hidden"
+      animate={isMounted ? "visible" : "hidden"}
       whileInView="visible"
       viewport={{ once: true, amount: 0.1 }}
       className={className}

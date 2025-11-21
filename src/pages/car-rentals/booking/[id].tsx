@@ -30,6 +30,7 @@ import { createBooking, Booking } from "@/services/bookingService";
 import { useToast } from "@/hooks/use-toast";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { useVehiclesData } from "@/contexts/ContentDataContext";
+import { checkVehicleAvailability } from "@/services/vehicleAvailabilityService";
 
 export default function CarRentalBookingPage() {
   const router = useRouter();
@@ -39,6 +40,8 @@ export default function CarRentalBookingPage() {
   const { data: vehicles, loading: vehiclesLoading } = useVehiclesData();
 
   const [selectedDates, setSelectedDates] = useState<DateRange | undefined>(undefined);
+  const [availabilityCount, setAvailabilityCount] = useState<number | null>(null);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [bookingData, setBookingData] = useState({
     name: "",
     email: "",
@@ -57,6 +60,32 @@ export default function CarRentalBookingPage() {
 
   const vehicleId = Array.isArray(id) ? id[0] : id;
   const vehicle = router.isReady && vehicleId ? vehicles.find((v) => v.id === vehicleId) : null;
+
+  // Check availability when dates change
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (!vehicle || !selectedDates?.from || !selectedDates?.to) {
+        setAvailabilityCount(null);
+        return;
+      }
+
+      setIsCheckingAvailability(true);
+      try {
+        const bookedCount = await checkVehicleAvailability(vehicle.id, selectedDates.from, selectedDates.to);
+        const available = Math.max(0, vehicle.stockCount - bookedCount);
+        setAvailabilityCount(available);
+      } catch (error) {
+        console.error("Failed to check availability", error);
+        // On error, maybe assume available but warn? Or block?
+        // Let's assume blocked to be safe or null
+        setAvailabilityCount(0); 
+      } finally {
+        setIsCheckingAvailability(false);
+      }
+    };
+
+    checkAvailability();
+  }, [selectedDates, vehicle]);
 
   // Update form data when user is authenticated
   useEffect(() => {
@@ -149,9 +178,31 @@ export default function CarRentalBookingPage() {
       return;
     }
 
+    // Double check availability before submitting
+    if (availabilityCount === 0) {
+      toast({
+        title: "Vehicle Unavailable",
+        description: "This vehicle is fully booked for the selected dates.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsBooking(true);
 
     try {
+      // Final availability check to prevent race conditions
+      const currentBookedCount = await checkVehicleAvailability(vehicle.id, selectedDates!.from!, selectedDates!.to!);
+      if (vehicle.stockCount - currentBookedCount <= 0) {
+        toast({
+          title: "Fully Booked",
+          description: "Sorry, someone just booked the last vehicle for these dates.",
+          variant: "destructive",
+        });
+        setAvailabilityCount(0);
+        return;
+      }
+
       const totalPrice = calculateTotalPrice();
       const rentalDays = getRentalDays();
       
@@ -464,6 +515,40 @@ export default function CarRentalBookingPage() {
                             day_selected: "bg-gray-50 text-gray-700 hover:bg-gray-100"
                           }}
                         />
+                        
+                        {/* Availability Indicator */}
+                        {selectedDates?.from && selectedDates?.to && (
+                          <div className="mt-3">
+                            {isCheckingAvailability ? (
+                              <div className="flex items-center text-sm text-gray-500 animate-pulse">
+                                <span className="mr-2">Checking availability...</span>
+                              </div>
+                            ) : availabilityCount !== null ? (
+                              <div className={`p-3 rounded-lg border ${
+                                availabilityCount > 0 
+                                  ? "bg-green-50 border-green-200 text-green-800" 
+                                  : "bg-red-50 border-red-200 text-red-800"
+                              }`}>
+                                <p className="font-semibold flex items-center">
+                                  {availabilityCount > 0 ? (
+                                    <>
+                                      <Check className="h-4 w-4 mr-2" />
+                                      {availabilityCount} {vehicle.type}s Available
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="h-4 w-4 mr-2 flex items-center justify-center font-bold">!</span>
+                                      Fully Booked for these dates
+                                    </>
+                                  )}
+                                </p>
+                                {availabilityCount === 0 && (
+                                  <p className="text-xs mt-1">Please select different dates.</p>
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
+                        )}
                       </div>
 
                       <div>
@@ -578,9 +663,9 @@ export default function CarRentalBookingPage() {
                         type="submit" 
                         className="w-full bg-blue-600 hover:bg-blue-700" 
                         size="lg"
-                        disabled={isBooking || authLoading}
+                        disabled={isBooking || authLoading || (availabilityCount !== null && availabilityCount <= 0)}
                       >
-                        {isBooking ? "Processing..." : "Book Vehicle"}
+                        {isBooking ? "Processing..." : availabilityCount === 0 ? "Sold Out" : "Book Vehicle"}
                       </Button>
                       <p className="text-xs text-center text-gray-500">
                         By booking, you agree to our terms and conditions
