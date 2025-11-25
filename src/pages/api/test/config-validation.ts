@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextApiRequest, NextApiResponse } from 'next';
 import { withApiSecurity, withErrorHandler } from '@/lib/api-middleware';
 
@@ -78,7 +79,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   // Check Project ID Match
   const clientProjectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
   const adminProjectId = process.env.FIREBASE_PROJECT_ID;
-  
+
   if (clientProjectId && adminProjectId && clientProjectId === adminProjectId) {
     checks.push({
       name: 'Project ID Consistency',
@@ -98,15 +99,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
   if (privateKey) {
     // Check if it contains the private key markers
-    const hasMarkers = privateKey.includes('-----BEGIN PRIVATE KEY-----') && 
-                      privateKey.includes('-----END PRIVATE KEY-----');
-    
+    const hasMarkers = privateKey.includes('-----BEGIN PRIVATE KEY-----') &&
+      privateKey.includes('-----END PRIVATE KEY-----');
+
     // Check if it has proper formatting (actual newlines which is what we want)
     const hasNewlines = privateKey.includes('\n');
-    
+
     // Check minimum length (private keys are long)
     const hasProperLength = privateKey.length > 100;
-    
+
     if (hasMarkers && hasNewlines && hasProperLength) {
       checks.push({
         name: 'Private Key Format',
@@ -118,7 +119,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
       if (!hasMarkers) issues.push('missing private key markers');
       if (!hasNewlines) issues.push('missing line breaks (\\n)');
       if (!hasProperLength) issues.push('key too short');
-      
+
       checks.push({
         name: 'Private Key Format',
         status: 'fail',
@@ -215,7 +216,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Firebase Admin SDK',
       status: 'fail',
-      message: `Initialization error: ${error.message}`
+      message: `Initialization error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -264,7 +265,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 };
 
 export default withErrorHandler(
-  withApiSecurity(null, {
+  withApiSecurity(undefined, {
     rateLimit: { windowMs: 60 * 1000, maxRequests: 10 }
   })(handler)
 );

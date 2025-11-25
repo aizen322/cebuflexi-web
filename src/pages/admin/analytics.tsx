@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { AdminProtectedRoute } from "@/components/Auth/AdminProtectedRoute";
 import { AdminLayout } from "@/components/Admin/AdminLayout";
@@ -11,8 +11,8 @@ import { COLLECTIONS } from "@/lib/firestore-collections";
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
 export default function AdminAnalyticsPage() {
-  const [bookingsByStatus, setBookingsByStatus] = useState<any[]>([]);
-  const [bookingsByType, setBookingsByType] = useState<any[]>([]);
+  const [bookingsByStatus, setBookingsByStatus] = useState<{ name: string; value: number }[]>([]);
+  const [bookingsByType, setBookingsByType] = useState<{ name: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -25,8 +25,9 @@ export default function AdminAnalyticsPage() {
       const bookings = bookingsSnapshot.docs.map(doc => doc.data());
 
       // Group by status
-      const statusGroups = bookings.reduce((acc: any, booking: any) => {
-        const status = booking.status || "pending";
+      const statusGroups = bookings.reduce((acc: Record<string, number>, booking) => {
+        const data = booking as { status?: string;[key: string]: unknown };
+        const status = data.status || "pending";
         acc[status] = (acc[status] || 0) + 1;
         return acc;
       }, {});
@@ -37,8 +38,9 @@ export default function AdminAnalyticsPage() {
       }));
 
       // Group by type
-      const typeGroups = bookings.reduce((acc: any, booking: any) => {
-        const type = booking.bookingType || "tour";
+      const typeGroups = bookings.reduce((acc: Record<string, number>, booking) => {
+        const data = booking as { bookingType?: string;[key: string]: unknown };
+        const type = data.bookingType || "tour";
         acc[type] = (acc[type] || 0) + 1;
         return acc;
       }, {});
@@ -130,5 +132,3 @@ export default function AdminAnalyticsPage() {
     </AdminProtectedRoute>
   );
 }
-
-

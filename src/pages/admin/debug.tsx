@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -10,15 +10,11 @@ import { Button } from "@/components/ui/button";
 
 export default function AdminDebugPage() {
   const { user } = useAuth();
-  const [tokenClaims, setTokenClaims] = useState<any>(null);
+  const [tokenClaims, setTokenClaims] = useState<Record<string, unknown> | null>(null);
   const [firestoreRole, setFirestoreRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    checkRole();
-  }, [user]);
-
-  async function checkRole() {
+  const checkRole = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -39,12 +35,16 @@ export default function AdminDebugPage() {
       } else {
         setFirestoreRole("document not found");
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error checking role:", error);
     } finally {
       setLoading(false);
     }
-  }
+  }, [user]);
+
+  useEffect(() => {
+    checkRole();
+  }, [checkRole]);
 
   async function refreshToken() {
     if (auth.currentUser) {
@@ -105,7 +105,7 @@ export default function AdminDebugPage() {
                         <XCircle className="h-5 w-5 text-red-500" />
                       )}
                       <span>
-                        <strong>Role in Token:</strong> {tokenClaims?.role || "not set"}
+                        <strong>Role in Token:</strong> {(tokenClaims?.role as string) || "not set"}
                       </span>
                     </div>
                     <div className="bg-muted p-4 rounded-lg">

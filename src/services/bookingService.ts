@@ -58,7 +58,7 @@ export const createBooking = async (bookingData: Omit<Booking, "id" | "createdAt
       endDate: Timestamp.fromDate(bookingData.endDate),
     });
     return docRef.id;
-  } catch (error: any) {
+  } catch (error) {
     console.error("Booking creation error:", error);
     console.error("Booking data:", {
       userId: bookingData.userId,
@@ -71,7 +71,8 @@ export const createBooking = async (bookingData: Omit<Booking, "id" | "createdAt
       status: bookingData.status || "pending",
     });
     
-    if (error.code === "permission-denied") {
+    const firebaseError = error as { code?: string };
+    if (firebaseError.code === "permission-denied") {
       throw new Error(
         "Permission denied. Please ensure:\n" +
         "1. You are logged in\n" +

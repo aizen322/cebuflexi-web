@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
-export function ConfigDebug() {
-  const [config, setConfig] = useState<any>(null);
+export default function ConfigDebug() {
+  const [config, setConfig] = useState<Record<string, string | undefined> | null>(null);
 
   useEffect(() => {
     const firebaseConfig = {
       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
       messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
@@ -16,8 +16,10 @@ export function ConfigDebug() {
     setConfig(firebaseConfig);
   }, []);
 
+  if (!config) return null;
+
   return (
-    <div className="fixed top-4 right-4 bg-white border rounded-lg p-4 shadow-lg max-w-md text-xs">
+    <div className="fixed top-4 right-4 bg-white border rounded-lg p-4 shadow-lg max-w-md text-xs z-50">
       <h3 className="font-bold mb-2">Environment Variables Debug</h3>
       <div className="space-y-1">
         <div>

@@ -39,7 +39,7 @@ function getSessionId(req: NextApiRequest): string {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
   const userAgent = req.headers['user-agent'] || 'unknown';
   const combined = `${ip}-${userAgent}`;
-  
+
   // Simple hash function
   let hash = 0;
   for (let i = 0; i < combined.length; i++) {
@@ -47,7 +47,7 @@ function getSessionId(req: NextApiRequest): string {
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
-  
+
   return Math.abs(hash).toString();
 }
 
@@ -56,9 +56,9 @@ export function generateCSRFToken(req: NextApiRequest): string {
   const sessionId = getSessionId(req);
   const token = generateToken();
   const expires = Date.now() + CSRF_CONFIG.tokenExpiry;
-  
+
   csrfTokenStore.set(sessionId, { token, expires });
-  
+
   return token;
 }
 
@@ -70,7 +70,7 @@ export function validateCSRFToken(req: NextApiRequest, token: string): boolean {
 
   const sessionId = getSessionId(req);
   const storedData = csrfTokenStore.get(sessionId);
-  
+
   if (!storedData) {
     return false;
   }
@@ -83,7 +83,7 @@ export function validateCSRFToken(req: NextApiRequest, token: string): boolean {
 
   // Validate token
   const isValid = storedData.token === token;
-  
+
   // Optionally regenerate token after validation (double-submit protection)
   if (isValid) {
     storedData.token = generateToken();
@@ -119,7 +119,7 @@ export function withCSRF(handler: (req: NextApiRequest, res: NextApiResponse) =>
 
     // Get token from request
     const token = getCSRFTokenFromRequest(req);
-    
+
     if (!token) {
       return res.status(403).json({
         error: 'CSRF token missing',
@@ -142,10 +142,10 @@ export function withCSRF(handler: (req: NextApiRequest, res: NextApiResponse) =>
 // Generate and set CSRF token in response
 export function setCSRFToken(req: NextApiRequest, res: NextApiResponse): string {
   const token = generateCSRFToken(req);
-  
+
   // Set token in response headers for client to read
   res.setHeader('X-CSRF-Token', token);
-  
+
   // Set secure session cookie
   const sessionId = getSessionId(req);
   res.setHeader('Set-Cookie', [
@@ -162,7 +162,7 @@ export async function handleCSRFTokenRequest(req: NextApiRequest, res: NextApiRe
   }
 
   const token = setCSRFToken(req, res);
-  
+
   res.json({
     csrfToken: token,
     expires: Date.now() + CSRF_CONFIG.tokenExpiry,
@@ -200,7 +200,7 @@ export const clientCSRF = {
   // Add CSRF token to request headers
   async addTokenToHeaders(headers: HeadersInit = {}): Promise<HeadersInit> {
     const token = await this.getToken();
-    
+
     return {
       ...headers,
       ...(token && { 'X-CSRF-Token': token }),
@@ -210,7 +210,7 @@ export const clientCSRF = {
   // Add CSRF token to form data
   async addTokenToFormData(formData: FormData): Promise<FormData> {
     const token = await this.getToken();
-    
+
     if (token) {
       formData.append('_csrf', token);
     }
@@ -219,9 +219,9 @@ export const clientCSRF = {
   },
 
   // Add CSRF token to JSON data
-  async addTokenToJSON(data: any): Promise<any> {
+  async addTokenToJSON<T extends object>(data: T): Promise<T & { _csrf?: string }> {
     const token = await this.getToken();
-    
+
     return {
       ...data,
       ...(token && { _csrf: token }),

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useForm } from "react-hook-form";
+import Image from "next/image";
+import { FieldErrors, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AdminProtectedRoute } from "@/components/Auth/AdminProtectedRoute";
 import { AdminLayout } from "@/components/Admin/AdminLayout";
@@ -101,11 +102,11 @@ export default function AdminEditVehiclePage() {
           available: vehicle.available ?? true,
           stockCount: vehicle.stockCount || 1,
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error loading vehicle:", error);
         toast({
           title: "Error",
-          description: error.message || "Failed to load vehicle",
+          description: error instanceof Error ? error.message : "Failed to load vehicle",
           variant: "destructive",
         });
         router.push("/admin/vehicles");
@@ -175,7 +176,7 @@ export default function AdminEditVehiclePage() {
     const file = Array.from(e.dataTransfer.files).find(
       f => f.type.startsWith('image/')
     );
-    
+
     if (file) {
       processFile(file);
     }
@@ -195,10 +196,11 @@ export default function AdminEditVehiclePage() {
     input.click();
   }
 
-  const onError = (errors: any) => {
+  const onError = (errors: FieldErrors<VehicleFormData>) => {
     console.error("Form validation errors:", errors);
-    const firstError = Object.keys(errors)[0];
-    const errorMessage = errors[firstError]?.message || "Please check all required fields";
+    const firstError = Object.keys(errors)[0] as keyof VehicleFormData | undefined;
+    const errorMessage =
+      (firstError && errors[firstError]?.message) || "Please check all required fields";
     toast({
       title: "Validation Error",
       description: errorMessage,
@@ -238,7 +240,7 @@ export default function AdminEditVehiclePage() {
 
       // Filter out empty features
       const processedFeatures = (data.features || []).filter(f => f.trim().length > 0);
-      
+
       if (processedFeatures.length === 0) {
         throw new Error("At least one feature is required");
       }
@@ -265,11 +267,11 @@ export default function AdminEditVehiclePage() {
       });
 
       router.push("/admin/vehicles");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating vehicle:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update vehicle",
+        description: error instanceof Error ? error.message : "Failed to update vehicle",
         variant: "destructive",
       });
     } finally {
@@ -349,7 +351,7 @@ export default function AdminEditVehiclePage() {
                 <div className="space-y-2">
                   <Label htmlFor="type">Vehicle Type *</Label>
                   <Select
-                    onValueChange={(value) => setValue("type", value as any)}
+                    onValueChange={(value: string) => setValue("type", value as "Sedan" | "SUV" | "Van")}
                     value={watch("type")}
                   >
                     <SelectTrigger>
@@ -420,7 +422,7 @@ export default function AdminEditVehiclePage() {
                 <div className="space-y-2">
                   <Label htmlFor="transmission">Transmission *</Label>
                   <Select
-                    onValueChange={(value) => setValue("transmission", value as any)}
+                    onValueChange={(value: string) => setValue("transmission", value as "Automatic" | "Manual")}
                     value={watch("transmission")}
                   >
                     <SelectTrigger>
@@ -439,7 +441,7 @@ export default function AdminEditVehiclePage() {
                 <div className="space-y-2">
                   <Label htmlFor="fuelType">Fuel Type *</Label>
                   <Select
-                    onValueChange={(value) => setValue("fuelType", value as any)}
+                    onValueChange={(value: string) => setValue("fuelType", value as "Gasoline" | "Diesel" | "Hybrid")}
                     value={watch("fuelType")}
                   >
                     <SelectTrigger>
@@ -497,18 +499,18 @@ export default function AdminEditVehiclePage() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                  isDragging
+                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${isDragging
                     ? "border-primary bg-primary/5"
                     : "border-muted-foreground/25 hover:border-primary/50"
-                }`}
+                  }`}
               >
                 {imagePreview ? (
                   <div className="relative group aspect-video max-w-2xl mx-auto">
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Vehicle preview"
-                      className="w-full h-full object-cover rounded-lg"
+                      fill
+                      className="object-cover rounded-lg"
                     />
                     <Button
                       type="button"

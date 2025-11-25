@@ -103,7 +103,7 @@ export function useItineraryBooking({
       // Validate booking data
       const validation = validateForm(tourBookingSchema, formattedBookingData);
 
-      if (!validation.success) {
+      if (!validation.success || !validation.data) {
         const errorMessages = Object.entries(validation.errors || {}).map(
           ([field, message]) => {
             const fieldName =
@@ -122,24 +122,25 @@ export function useItineraryBooking({
       }
 
       // Sanitize validated data
+      const validatedData = validation.data;
       const sanitizedData: BookingFormData = {
-        name: sanitizeUserInput(validation.data.name, "text"),
-        email: sanitizeUserInput(validation.data.email, "email"),
-        phone: sanitizeUserInput(validation.data.phone, "phone"),
+        name: sanitizeUserInput(validatedData.name, "text"),
+        email: sanitizeUserInput(validatedData.email, "email"),
+        phone: sanitizeUserInput(validatedData.phone || "", "phone"),
         phoneCountryCode: bookingData.phoneCountryCode || "PH",
-        groupSize: Number(validation.data.groupSize),
-        specialRequests: validation.data.specialRequests
-          ? sanitizeUserInput(validation.data.specialRequests, "text")
+        groupSize: Number(validatedData.groupSize),
+        specialRequests: validatedData.specialRequests
+          ? sanitizeUserInput(validatedData.specialRequests, "text")
           : "",
-        bookingType: validation.data.bookingType || "self",
-        guestName: validation.data.guestName
-          ? sanitizeUserInput(validation.data.guestName, "text")
+        bookingType: validatedData.bookingType || "self",
+        guestName: validatedData.guestName
+          ? sanitizeUserInput(validatedData.guestName, "text")
           : "",
-        guestEmail: validation.data.guestEmail
-          ? sanitizeUserInput(validation.data.guestEmail, "email")
+        guestEmail: validatedData.guestEmail
+          ? sanitizeUserInput(validatedData.guestEmail, "email")
           : "",
-        guestPhone: validation.data.guestPhone
-          ? sanitizeUserInput(validation.data.guestPhone, "phone")
+        guestPhone: validatedData.guestPhone
+          ? sanitizeUserInput(validatedData.guestPhone, "phone")
           : "",
         guestPhoneCountryCode: bookingData.guestPhoneCountryCode || "PH",
       };

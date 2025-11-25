@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AdminProtectedRoute } from "@/components/Auth/AdminProtectedRoute";
@@ -116,7 +117,7 @@ export default function AdminNewVehiclePage() {
     const file = Array.from(e.dataTransfer.files).find(
       f => f.type.startsWith('image/')
     );
-    
+
     if (file) {
       processFile(file);
     }
@@ -136,10 +137,11 @@ export default function AdminNewVehiclePage() {
     input.click();
   }
 
-  const onError = (errors: any) => {
+  const onError = (errors: unknown) => {
     console.error("Form validation errors:", errors);
-    const firstError = Object.keys(errors)[0];
-    const errorMessage = errors[firstError]?.message || "Please check all required fields";
+    const errorsObj = errors as Record<string, { message?: string }>;
+    const firstError = Object.keys(errorsObj)[0];
+    const errorMessage = errorsObj[firstError]?.message || "Please check all required fields";
     toast({
       title: "Validation Error",
       description: errorMessage,
@@ -161,7 +163,7 @@ export default function AdminNewVehiclePage() {
     try {
       // Create temp ID for image upload
       const tempVehicleId = `temp-${Date.now()}`;
-      
+
       // Upload image
       const imageUrl = await uploadVehicleImage(
         imageFile,
@@ -173,7 +175,7 @@ export default function AdminNewVehiclePage() {
 
       // Filter out empty features
       const processedFeatures = (data.features || []).filter(f => f.trim().length > 0);
-      
+
       if (processedFeatures.length === 0) {
         throw new Error("At least one feature is required");
       }
@@ -194,7 +196,7 @@ export default function AdminNewVehiclePage() {
         stockCount: data.stockCount,
       };
 
-      const vehicleId = await createVehicle(vehicleData);
+      await createVehicle(vehicleData);
 
       toast({
         title: "Success",
@@ -202,11 +204,11 @@ export default function AdminNewVehiclePage() {
       });
 
       router.push("/admin/vehicles");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating vehicle:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create vehicle",
+        description: error instanceof Error ? error.message : "Failed to create vehicle",
         variant: "destructive",
       });
     } finally {
@@ -267,7 +269,7 @@ export default function AdminNewVehiclePage() {
                 <div className="space-y-2">
                   <Label htmlFor="type">Vehicle Type *</Label>
                   <Select
-                    onValueChange={(value) => setValue("type", value as any)}
+                    onValueChange={(value: string) => setValue("type", value as "Sedan" | "SUV" | "Van")}
                     value={watch("type")}
                   >
                     <SelectTrigger>
@@ -338,7 +340,7 @@ export default function AdminNewVehiclePage() {
                 <div className="space-y-2">
                   <Label htmlFor="transmission">Transmission *</Label>
                   <Select
-                    onValueChange={(value) => setValue("transmission", value as any)}
+                    onValueChange={(value: string) => setValue("transmission", value as "Automatic" | "Manual")}
                     value={watch("transmission")}
                   >
                     <SelectTrigger>
@@ -357,7 +359,7 @@ export default function AdminNewVehiclePage() {
                 <div className="space-y-2">
                   <Label htmlFor="fuelType">Fuel Type *</Label>
                   <Select
-                    onValueChange={(value) => setValue("fuelType", value as any)}
+                    onValueChange={(value: string) => setValue("fuelType", value as "Gasoline" | "Diesel" | "Hybrid")}
                     value={watch("fuelType")}
                   >
                     <SelectTrigger>
@@ -415,18 +417,18 @@ export default function AdminNewVehiclePage() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                  isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-muted-foreground/25 hover:border-primary/50"
-                }`}
+                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${isDragging
+                  ? "border-primary bg-primary/5"
+                  : "border-muted-foreground/25 hover:border-primary/50"
+                  }`}
               >
                 {imagePreview ? (
                   <div className="relative group aspect-video max-w-2xl mx-auto">
-                    <img
+                    <Image
                       src={imagePreview}
                       alt="Vehicle preview"
-                      className="w-full h-full object-cover rounded-lg"
+                      fill
+                      className="object-cover rounded-lg"
                     />
                     <Button
                       type="button"

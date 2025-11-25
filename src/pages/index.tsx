@@ -1,7 +1,5 @@
 
 import Head from "next/head";
-import { Header } from "@/components/Layout/Header";
-import { Footer } from "@/components/Layout/Footer";
 import { HeroSection } from "@/components/Home/HeroSection";
 import { FeaturedTours } from "@/components/Home/FeaturedTours";
 import { DIYTourTeaser } from "@/components/Home/DIYTourTeaser";
@@ -24,18 +22,14 @@ export default function HomePage() {
         <link rel="canonical" href="https://cebuflexitours.com" />
       </Head>
 
-      <Header />
-      
-      <main className="overflow-x-hidden">
+      <div className="overflow-x-hidden">
         <HeroSection />
         <FeaturedTours />
         <DIYTourTeaser />
         <WhyChooseUs />
         <CarRentalTeaser />
         <Testimonials />
-      </main>
-
-      <Footer />
+      </div>
     </>
   );
 }

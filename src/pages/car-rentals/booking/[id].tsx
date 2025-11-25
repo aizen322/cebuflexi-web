@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import type { DateRange } from "react-day-picker";
@@ -12,14 +13,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  Car, 
-  Users, 
-  Fuel, 
-  Settings, 
-  Check, 
-  Calendar as CalendarIcon, 
-  Mail, 
+import {
+  Car,
+  Users,
+  Fuel,
+  Settings,
+  Check,
+  Calendar as CalendarIcon,
+  Mail,
   User,
   Clock,
   MapPin,
@@ -78,7 +79,7 @@ export default function CarRentalBookingPage() {
         console.error("Failed to check availability", error);
         // On error, maybe assume available but warn? Or block?
         // Let's assume blocked to be safe or null
-        setAvailabilityCount(0); 
+        setAvailabilityCount(0);
       } finally {
         setIsCheckingAvailability(false);
       }
@@ -131,14 +132,14 @@ export default function CarRentalBookingPage() {
 
   const calculateTotalPrice = () => {
     if (!selectedDates?.from || !selectedDates?.to) return 0;
-    
+
     const days = Math.ceil((selectedDates.to.getTime() - selectedDates.from.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     let total = vehicle.pricePerDay * days;
-    
+
     if (bookingData.addOns.insurance) total += 500 * days;
     if (bookingData.addOns.gps) total += 200 * days;
     if (bookingData.addOns.childSeat) total += 150 * days;
-    
+
     return total;
   };
 
@@ -149,7 +150,7 @@ export default function CarRentalBookingPage() {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Check if user is authenticated
     if (!user) {
       toast({
@@ -205,7 +206,7 @@ export default function CarRentalBookingPage() {
 
       const totalPrice = calculateTotalPrice();
       const rentalDays = getRentalDays();
-      
+
       const booking: Omit<Booking, "id" | "createdAt"> = {
         userId: user.uid,
         userEmail: user.email || "",
@@ -229,7 +230,7 @@ export default function CarRentalBookingPage() {
       };
 
       const bookingId = await createBooking(booking);
-      
+
       // Redirect to confirmation page instead of showing toast
       router.push(`/booking-confirmation/${bookingId}`);
 
@@ -277,31 +278,32 @@ export default function CarRentalBookingPage() {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => router.push("/car-rentals")}
                   className="mb-4"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Vehicles
                 </Button>
-                
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-2xl">Vehicle Details</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col md:flex-row gap-6">
-                      <div className="md:w-1/3">
-                        <img
+                      <div className="md:w-1/3 relative h-48">
+                        <Image
                           src={vehicle.image}
                           alt={`${vehicle.type} rental`}
-                          className="w-full h-48 object-cover rounded-lg"
+                          fill
+                          className="object-cover rounded-lg"
                         />
                       </div>
                       <div className="md:w-2/3">
                         <h1 className="text-3xl font-bold mb-2">{vehicle.type}</h1>
-                        
+
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div className="flex items-center">
                             <Users className="h-4 w-4 mr-2 text-blue-600" />
@@ -367,7 +369,7 @@ export default function CarRentalBookingPage() {
                             id="name"
                             required
                             value={bookingData.name}
-                            onChange={(e) => setBookingData({...bookingData, name: e.target.value})}
+                            onChange={(e) => setBookingData({ ...bookingData, name: e.target.value })}
                             className="pl-10"
                             placeholder="John Doe"
                             disabled={!!user}
@@ -387,7 +389,7 @@ export default function CarRentalBookingPage() {
                             type="email"
                             required
                             value={bookingData.email}
-                            onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
+                            onChange={(e) => setBookingData({ ...bookingData, email: e.target.value })}
                             className="pl-10"
                             placeholder="john@example.com"
                             disabled={!!user}
@@ -404,7 +406,7 @@ export default function CarRentalBookingPage() {
                           id="phone"
                           value={bookingData.phone}
                           onChange={(phone, countryCode) => setBookingData({
-                            ...bookingData, 
+                            ...bookingData,
                             phone: phone,
                             phoneCountryCode: countryCode
                           })}
@@ -422,7 +424,7 @@ export default function CarRentalBookingPage() {
                             id="pickup"
                             required
                             value={bookingData.pickupLocation}
-                            onChange={(e) => setBookingData({...bookingData, pickupLocation: e.target.value})}
+                            onChange={(e) => setBookingData({ ...bookingData, pickupLocation: e.target.value })}
                             className="pl-10"
                             placeholder="Cebu City or Airport"
                           />
@@ -436,7 +438,7 @@ export default function CarRentalBookingPage() {
                           <Input
                             id="dropoff"
                             value={bookingData.dropoffLocation}
-                            onChange={(e) => setBookingData({...bookingData, dropoffLocation: e.target.value})}
+                            onChange={(e) => setBookingData({ ...bookingData, dropoffLocation: e.target.value })}
                             className="pl-10"
                             placeholder="Same as pickup (if different)"
                           />
@@ -515,7 +517,7 @@ export default function CarRentalBookingPage() {
                             day_selected: "bg-gray-50 text-gray-700 hover:bg-gray-100"
                           }}
                         />
-                        
+
                         {/* Availability Indicator */}
                         {selectedDates?.from && selectedDates?.to && (
                           <div className="mt-3">
@@ -524,11 +526,10 @@ export default function CarRentalBookingPage() {
                                 <span className="mr-2">Checking availability...</span>
                               </div>
                             ) : availabilityCount !== null ? (
-                              <div className={`p-3 rounded-lg border ${
-                                availabilityCount > 0 
-                                  ? "bg-green-50 border-green-200 text-green-800" 
+                              <div className={`p-3 rounded-lg border ${availabilityCount > 0
+                                  ? "bg-green-50 border-green-200 text-green-800"
                                   : "bg-red-50 border-red-200 text-red-800"
-                              }`}>
+                                }`}>
                                 <p className="font-semibold flex items-center">
                                   {availabilityCount > 0 ? (
                                     <>
@@ -561,8 +562,8 @@ export default function CarRentalBookingPage() {
                                 id="insurance"
                                 checked={bookingData.addOns.insurance}
                                 onChange={(e) => setBookingData({
-                                  ...bookingData, 
-                                  addOns: {...bookingData.addOns, insurance: e.target.checked}
+                                  ...bookingData,
+                                  addOns: { ...bookingData.addOns, insurance: e.target.checked }
                                 })}
                                 className="rounded"
                               />
@@ -579,8 +580,8 @@ export default function CarRentalBookingPage() {
                                 id="gps"
                                 checked={bookingData.addOns.gps}
                                 onChange={(e) => setBookingData({
-                                  ...bookingData, 
-                                  addOns: {...bookingData.addOns, gps: e.target.checked}
+                                  ...bookingData,
+                                  addOns: { ...bookingData.addOns, gps: e.target.checked }
                                 })}
                                 className="rounded"
                               />
@@ -597,8 +598,8 @@ export default function CarRentalBookingPage() {
                                 id="childSeat"
                                 checked={bookingData.addOns.childSeat}
                                 onChange={(e) => setBookingData({
-                                  ...bookingData, 
-                                  addOns: {...bookingData.addOns, childSeat: e.target.checked}
+                                  ...bookingData,
+                                  addOns: { ...bookingData.addOns, childSeat: e.target.checked }
                                 })}
                                 className="rounded"
                               />
@@ -616,7 +617,7 @@ export default function CarRentalBookingPage() {
                         <Textarea
                           id="requests"
                           value={bookingData.specialRequests}
-                          onChange={(e) => setBookingData({...bookingData, specialRequests: e.target.value})}
+                          onChange={(e) => setBookingData({ ...bookingData, specialRequests: e.target.value })}
                           placeholder="Additional driver, specific pickup time, etc."
                           rows={3}
                         />
@@ -659,9 +660,9 @@ export default function CarRentalBookingPage() {
                         </div>
                       </div>
 
-                      <Button 
-                        type="submit" 
-                        className="w-full bg-blue-600 hover:bg-blue-700" 
+                      <Button
+                        type="submit"
+                        className="w-full bg-blue-600 hover:bg-blue-700"
                         size="lg"
                         disabled={isBooking || authLoading || (availabilityCount !== null && availabilityCount <= 0)}
                       >

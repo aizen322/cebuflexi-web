@@ -1,5 +1,6 @@
 
 import Head from "next/head";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Header } from "@/components/Layout/Header";
@@ -72,13 +73,13 @@ export default function BlogPostPage() {
         <meta name="description" content={post.excerpt} />
         <meta name="keywords" content={post.keywords.join(", ")} />
         <link rel="canonical" href={`https://cebuflexitours.com/blog/${post.slug}`} />
-        
+
         <meta property="og:title" content={post.title} />
         <meta property="og:description" content={post.excerpt} />
         <meta property="og:image" content={post.image} />
         <meta property="og:url" content={`https://cebuflexitours.com/blog/${post.slug}`} />
         <meta property="og:type" content="article" />
-        
+
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={post.title} />
         <meta name="twitter:description" content={post.excerpt} />
@@ -117,10 +118,12 @@ export default function BlogPostPage() {
       <main className="pt-20 min-h-screen">
         <article>
           <section className="relative h-96 bg-gray-900">
-            <img
+            <Image
               src={post.image}
               alt={post.title}
-              className="w-full h-full object-cover opacity-70"
+              fill
+              className="object-cover opacity-70"
+              priority
             />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="container mx-auto px-4 text-center text-white">
@@ -183,7 +186,7 @@ export default function BlogPostPage() {
                   </div>
                 </div>
 
-                <div 
+                <div
                   className="article-content"
                   dangerouslySetInnerHTML={{ __html: post.content }}
                 />
@@ -211,10 +214,11 @@ export default function BlogPostPage() {
                     <Link key={relatedPost.id} href={`/blog/${relatedPost.slug}`}>
                       <Card className="h-full hover:shadow-xl transition-shadow cursor-pointer overflow-hidden">
                         <div className="relative h-48">
-                          <img
+                          <Image
                             src={relatedPost.image}
                             alt={relatedPost.title}
-                            className="w-full h-full object-cover"
+                            fill
+                            className="object-cover"
                           />
                         </div>
                         <CardContent className="p-6">

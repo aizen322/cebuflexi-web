@@ -1,16 +1,16 @@
 
 import Head from "next/head";
-import { useState, useEffect } from "react";
+import Image from "next/image";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Users, Fuel, Settings, Check, Car, Search, Calendar as CalendarIcon } from "lucide-react";
 import { Vehicle } from "@/types";
@@ -37,7 +37,7 @@ export default function CarRentalsPage() {
     fuelType: "all"
   });
   const [searchQuery, setSearchQuery] = useState<string>("");
-  
+
   // Date based availability state
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(),
@@ -46,45 +46,13 @@ export default function CarRentalsPage() {
   const [availability, setAvailability] = useState<Record<string, AvailabilityResult>>({});
   const [isCalculating, setIsCalculating] = useState(false);
 
-  useEffect(() => {
-    setFilteredVehicles(vehicles);
-  }, [vehicles]);
-
-  // Fetch availability when dates or vehicles change
-  useEffect(() => {
-    const fetchAvailability = async () => {
-      if (!vehicles.length || !dateRange?.from || !dateRange?.to) return;
-      
-      setIsCalculating(true);
-      try {
-        const results = await getAvailableVehicles(vehicles, dateRange.from, dateRange.to);
-        const availMap: Record<string, AvailabilityResult> = {};
-        results.forEach(r => {
-          availMap[r.vehicleId] = r;
-        });
-        setAvailability(availMap);
-      } catch (error) {
-        console.error("Failed to fetch availability", error);
-      } finally {
-        setIsCalculating(false);
-      }
-    };
-
-    fetchAvailability();
-  }, [vehicles, dateRange]);
-
-  // Auto-apply filters when search query changes
-  useEffect(() => {
-    applyFilters();
-  }, [searchQuery, vehicles]);
-
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...vehicles];
 
     // Search filter
     if (searchQuery.trim()) {
       const searchTerm = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(v => 
+      filtered = filtered.filter(v =>
         v.type.toLowerCase().includes(searchTerm)
       );
     }
@@ -103,8 +71,40 @@ export default function CarRentalsPage() {
     }
 
     setFilteredVehicles(filtered);
-    setAppliedFilters({...filters});
-  };
+    setAppliedFilters({ ...filters });
+  }, [filters, searchQuery, vehicles]);
+
+  useEffect(() => {
+    setFilteredVehicles(vehicles);
+  }, [vehicles]);
+
+  // Fetch availability when dates or vehicles change
+  useEffect(() => {
+    const fetchAvailability = async () => {
+      if (!vehicles.length || !dateRange?.from || !dateRange?.to) return;
+
+      setIsCalculating(true);
+      try {
+        const results = await getAvailableVehicles(vehicles, dateRange.from, dateRange.to);
+        const availMap: Record<string, AvailabilityResult> = {};
+        results.forEach(r => {
+          availMap[r.vehicleId] = r;
+        });
+        setAvailability(availMap);
+      } catch {
+        // Silently handle errors - availability will show as optimistic
+      } finally {
+        setIsCalculating(false);
+      }
+    };
+
+    fetchAvailability();
+  }, [vehicles, dateRange]);
+
+  // Auto-apply filters when search query changes
+  useEffect(() => {
+    applyFilters();
+  }, [applyFilters]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -214,7 +214,7 @@ export default function CarRentalsPage() {
 
                     <div>
                       <Label className="text-base font-semibold mb-3 block">Driver Option</Label>
-                      <RadioGroup value={filters.withDriver} onValueChange={(val) => setFilters({...filters, withDriver: val})}>
+                      <RadioGroup value={filters.withDriver} onValueChange={(val) => setFilters({ ...filters, withDriver: val })}>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="all" id="driver-all" />
                           <Label htmlFor="driver-all" className="cursor-pointer">All Options</Label>
@@ -232,7 +232,7 @@ export default function CarRentalsPage() {
 
                     <div>
                       <Label htmlFor="transmission" className="text-base font-semibold mb-3 block">Transmission</Label>
-                      <Select value={filters.transmission} onValueChange={(val) => setFilters({...filters, transmission: val})}>
+                      <Select value={filters.transmission} onValueChange={(val) => setFilters({ ...filters, transmission: val })}>
                         <SelectTrigger id="transmission">
                           <SelectValue />
                         </SelectTrigger>
@@ -246,7 +246,7 @@ export default function CarRentalsPage() {
 
                     <div>
                       <Label htmlFor="fuelType" className="text-base font-semibold mb-3 block">Fuel Type</Label>
-                      <Select value={filters.fuelType} onValueChange={(val) => setFilters({...filters, fuelType: val})}>
+                      <Select value={filters.fuelType} onValueChange={(val) => setFilters({ ...filters, fuelType: val })}>
                         <SelectTrigger id="fuelType">
                           <SelectValue />
                         </SelectTrigger>
@@ -281,8 +281,8 @@ export default function CarRentalsPage() {
                       </>
                     ) : (
                       <>
-                        {appliedFilters.withDriver === "with" ? "With Driver" : 
-                         appliedFilters.withDriver === "without" ? "Self-Drive" : "All Vehicles"}
+                        {appliedFilters.withDriver === "with" ? "With Driver" :
+                          appliedFilters.withDriver === "without" ? "Self-Drive" : "All Vehicles"}
                         <span className="text-gray-500 text-lg ml-2">({filteredVehicles.length})</span>
                       </>
                     )}
@@ -307,14 +307,11 @@ export default function CarRentalsPage() {
                         <div className="flex flex-col md:flex-row">
                           <div className="md:w-1/3 h-64 md:h-auto relative bg-gray-200">
                             {vehicle.image ? (
-                              <img
+                              <Image
                                 src={vehicle.image}
                                 alt={`${vehicle.type} - Car rental in Cebu`}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).style.display = 'none';
-                                  (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400"><span>No Image</span></div>';
-                                }}
+                                fill
+                                className="object-cover group-hover:scale-110 transition-transform duration-500"
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
@@ -326,7 +323,7 @@ export default function CarRentalsPage() {
                                 With Driver Available
                               </Badge>
                             )}
-                            
+
                             {isCalculating ? (
                               <Badge className="absolute top-4 right-4 bg-gray-500 text-white animate-pulse">
                                 Checking...
@@ -336,8 +333,8 @@ export default function CarRentalsPage() {
                                 "absolute top-4 right-4 text-white transition-transform duration-300 group-hover:scale-110",
                                 availability[vehicle.id].availableCount > 0 ? "bg-green-600" : "bg-red-600"
                               )}>
-                                {availability[vehicle.id].availableCount > 0 
-                                  ? `${availability[vehicle.id].availableCount} Available` 
+                                {availability[vehicle.id].availableCount > 0
+                                  ? `${availability[vehicle.id].availableCount} Available`
                                   : "Fully Booked"}
                               </Badge>
                             ) : (

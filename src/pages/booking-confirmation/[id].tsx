@@ -1,4 +1,5 @@
 import Head from "next/head";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Layout/Header";
@@ -7,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  CheckCircle, 
-  Calendar, 
-  Users, 
-  MapPin, 
-  Car, 
+import {
+  CheckCircle,
+  Calendar,
+  Users,
+  MapPin,
+  Car,
   Clock,
   Mail,
   Phone,
@@ -24,7 +25,7 @@ import { getBookingById, Booking } from "@/services/bookingService";
 import { motion } from "framer-motion";
 import { parseItineraryDetails, isCustomTour } from "@/lib/customTourHelpers";
 import { ItineraryMap } from "@/components/CustomItinerary/ItineraryMap";
-import { Landmark, MultiDayItineraryDetails } from "@/types";
+import { Landmark, MultiDayItineraryDetails, ItineraryDetails } from "@/types";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToursData, useVehiclesData, useLandmarksData } from "@/contexts/ContentDataContext";
 import { useMemo } from "react";
@@ -48,20 +49,20 @@ export default function BookingConfirmationPage() {
   useEffect(() => {
     const fetchBooking = async () => {
       if (!id) return;
-      
+
       try {
         setLoading(true);
         setError(null);
         const booking = await getBookingById(id as string);
-        
+
         if (!booking) {
           setError("Booking not found");
           return;
         }
-        
+
         setBookingData(booking);
       } catch (err) {
-        console.error("Error fetching booking:", err);
+        void err; // Error handled via state
         setError("Failed to load booking details");
       } finally {
         setLoading(false);
@@ -86,14 +87,14 @@ export default function BookingConfirmationPage() {
     );
   }
 
-  if (error) {
+  if (error || !bookingData) {
     return (
       <>
         <Header />
         <div className="pt-20 min-h-screen flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-4xl font-bold mb-4">Error</h1>
-            <p className="text-lg text-gray-600 mb-4">{error}</p>
+            <p className="text-lg text-gray-600 mb-4">{error || "Booking not found"}</p>
             <Button onClick={() => router.push("/")}>Back to Home</Button>
           </div>
         </div>
@@ -104,25 +105,29 @@ export default function BookingConfirmationPage() {
 
   const tour = bookingData.tourId ? tours.find((t) => t.id === bookingData.tourId) : null;
   const vehicle = bookingData.vehicleId ? vehicles.find((v) => v.id === bookingData.vehicleId) : null;
-  
+
   // Safely parse customizations JSON
   let customizations = null;
   if (bookingData.customizations) {
     try {
       customizations = JSON.parse(bookingData.customizations);
-    } catch (error) {
-      console.error("Error parsing customizations:", error);
+    } catch {
       customizations = null;
     }
   }
 
   // Parse custom tour itinerary details
   const itineraryDetails = isCustomTour(bookingData) ? parseItineraryDetails(bookingData) : null;
-  
-  // Detect multi-day vs single-day tours
-  const isMultiDay = itineraryDetails && (itineraryDetails as MultiDayItineraryDetails).days !== undefined;
-  const multiDayDetails = isMultiDay ? (itineraryDetails as MultiDayItineraryDetails) : null;
-  const singleDayDetails = !isMultiDay ? (itineraryDetails as any) : null;
+
+  const isMultiDayItinerary = (
+    details: ItineraryDetails | MultiDayItineraryDetails | null
+  ): details is MultiDayItineraryDetails => {
+    return Boolean(details && "days" in details);
+  };
+
+  const multiDayDetails = isMultiDayItinerary(itineraryDetails) ? itineraryDetails : null;
+  const singleDayDetails =
+    !multiDayDetails && itineraryDetails ? (itineraryDetails as ItineraryDetails) : null;
 
   return (
     <>
@@ -183,26 +188,26 @@ export default function BookingConfirmationPage() {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Booking Date:</span>
                       <span className="font-semibold">
-                        {bookingData.createdAt.toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
+                        {bookingData.createdAt.toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
                         })}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Service Date:</span>
                       <span className="font-semibold">
-                        {bookingData.startDate.toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
+                        {bookingData.startDate.toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
                         })}
                         {isCustomTour(bookingData) && itineraryDetails && (
                           <>
                             {' • '}
                             <strong>Day(s):</strong> {
-                              (itineraryDetails as MultiDayItineraryDetails).days 
+                              (itineraryDetails as MultiDayItineraryDetails).days
                                 ? (itineraryDetails as MultiDayItineraryDetails).duration === "2-days" ? "2" : "1"
                                 : "1"
                             }
@@ -243,7 +248,7 @@ export default function BookingConfirmationPage() {
                       <Phone className="h-4 w-4 text-gray-400" />
                       <span className="text-sm">{bookingData.contactPhone || 'Not provided'}</span>
                     </div>
-                    
+
                     {bookingData.guestName && (
                       <>
                         <Separator />
@@ -279,14 +284,14 @@ export default function BookingConfirmationPage() {
                     ) : (
                       <Car className="h-5 w-5 text-blue-600" />
                     )}
-                    {isCustomTour(bookingData) ? "Custom DIY Tour" : 
-                     bookingData.bookingType === "tour" ? "Tour Package" : "Vehicle Rental"} Details
+                    {isCustomTour(bookingData) ? "Custom DIY Tour" :
+                      bookingData.bookingType === "tour" ? "Tour Package" : "Vehicle Rental"} Details
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {isCustomTour(bookingData) && itineraryDetails ? (
                     <>
-                      {isMultiDay && multiDayDetails ? (
+                      {multiDayDetails ? (
                         <>
                           {/* Header showing total summary */}
                           <div className="text-center mb-6">
@@ -345,11 +350,12 @@ export default function BookingConfirmationPage() {
                                               {landmark.order}
                                             </Badge>
                                           </div>
-                                          <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
-                                            <img
+                                          <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden relative">
+                                            <Image
                                               src={landmark.image}
                                               alt={landmark.name}
-                                              className="w-full h-full object-cover"
+                                              fill
+                                              className="object-cover"
                                             />
                                           </div>
                                           <div className="flex-grow">
@@ -428,18 +434,19 @@ export default function BookingConfirmationPage() {
                               <div className="space-y-3">
                                 {singleDayDetails.landmarks
                                   .sort((a, b) => a.order - b.order)
-                                  .map((landmark, index) => (
+                                  .map((landmark) => (
                                     <div key={landmark.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                                       <div className="flex-shrink-0">
                                         <Badge className="bg-blue-600 w-8 h-8 rounded-full flex items-center justify-center">
                                           {landmark.order}
                                         </Badge>
                                       </div>
-                                      <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
-                                        <img
+                                      <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden relative">
+                                        <Image
                                           src={landmark.image}
                                           alt={landmark.name}
-                                          className="w-full h-full object-cover"
+                                          fill
+                                          className="object-cover"
                                         />
                                       </div>
                                       <div className="flex-grow">
@@ -484,11 +491,14 @@ export default function BookingConfirmationPage() {
                   ) : bookingData.bookingType === "tour" && tour ? (
                     <div className="space-y-4">
                       <div className="flex flex-col md:flex-row gap-4">
-                        <img
-                          src={tour.images[0]}
-                          alt={tour.title}
-                          className="w-full md:w-48 h-32 object-cover rounded-lg"
-                        />
+                        <div className="w-full md:w-48 h-32 relative">
+                          <Image
+                            src={tour.images[0]}
+                            alt={tour.title}
+                            fill
+                            className="object-cover rounded-lg"
+                          />
+                        </div>
                         <div className="flex-1">
                           <h3 className="text-xl font-bold mb-2">{tour.title}</h3>
                           <Badge className="mb-2">{tour.category}</Badge>
@@ -518,11 +528,14 @@ export default function BookingConfirmationPage() {
                   ) : bookingData.bookingType === "vehicle" && vehicle ? (
                     <div className="space-y-4">
                       <div className="flex flex-col md:flex-row gap-4">
-                        <img
-                          src={vehicle.image}
-                          alt={`${vehicle.type} rental`}
-                          className="w-full md:w-48 h-32 object-cover rounded-lg"
-                        />
+                        <div className="w-full md:w-48 h-32 relative">
+                          <Image
+                            src={vehicle.image}
+                            alt={`${vehicle.type} rental`}
+                            fill
+                            className="object-cover rounded-lg"
+                          />
+                        </div>
                         <div className="flex-1">
                           <h3 className="text-xl font-bold mb-2">{vehicle.type}</h3>
                           <div className="grid grid-cols-2 gap-4 text-sm mb-3">
@@ -623,8 +636,8 @@ export default function BookingConfirmationPage() {
 
               {/* Action Buttons */}
               <div className="text-center mt-8">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-blue-600 hover:bg-blue-700"
                   onClick={() => router.push("/")}
                 >

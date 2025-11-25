@@ -1,11 +1,17 @@
-import { initializeApp, getApps, cert, ServiceAccount } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert, ServiceAccount, App } from 'firebase-admin/app';
+import { getAuth, Auth } from 'firebase-admin/auth';
+import { getFirestore, Firestore } from 'firebase-admin/firestore';
+
+// Helper function to safely extract error message
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
 
 // Initialize Firebase Admin SDK
-let adminApp;
-let adminAuth;
-let adminDb;
+let adminApp: App;
+let adminAuth: Auth;
+let adminDb: Firestore;
 
 if (!getApps().length) {
   const serviceAccount: ServiceAccount = {
@@ -36,7 +42,7 @@ export async function verifyIdToken(token: string) {
     return { success: true, user: decodedToken };
   } catch (error) {
     console.error('Token verification failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -47,7 +53,7 @@ export async function getUserByUid(uid: string) {
     return { success: true, user: userRecord };
   } catch (error) {
     console.error('Get user failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -58,7 +64,7 @@ export async function setUserRole(uid: string, role: 'user' | 'admin' | 'moderat
     return { success: true };
   } catch (error) {
     console.error('Set user role failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -93,14 +99,14 @@ export async function createUser(email: string, password: string, displayName?: 
       displayName,
       emailVerified: false,
     });
-    
+
     // Set default role
     await setUserRole(userRecord.uid, 'user');
-    
+
     return { success: true, user: userRecord };
   } catch (error) {
     console.error('Create user failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -111,7 +117,7 @@ export async function deleteUser(uid: string) {
     return { success: true };
   } catch (error) {
     console.error('Delete user failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -127,7 +133,7 @@ export async function updateUser(uid: string, updates: {
     return { success: true, user: userRecord };
   } catch (error) {
     console.error('Update user failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -142,7 +148,7 @@ export async function listUsers(maxResults: number = 100, pageToken?: string) {
     };
   } catch (error) {
     console.error('List users failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -155,7 +161,7 @@ export async function generateEmailVerificationLink(email: string, continueUrl?:
     return { success: true, link };
   } catch (error) {
     console.error('Generate email verification link failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -168,7 +174,7 @@ export async function generatePasswordResetLink(email: string, continueUrl?: str
     return { success: true, link };
   } catch (error) {
     console.error('Generate password reset link failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -179,7 +185,7 @@ export async function revokeRefreshTokens(uid: string) {
     return { success: true };
   } catch (error) {
     console.error('Revoke refresh tokens failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }
 
@@ -204,6 +210,6 @@ export async function getUserSessionInfo(uid: string) {
     };
   } catch (error) {
     console.error('Get user session info failed:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: getErrorMessage(error) };
   }
 }

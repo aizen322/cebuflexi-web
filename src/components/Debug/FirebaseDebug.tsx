@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { connectFirestoreEmulator, doc, getDoc } from "firebase/firestore";
+import { onAuthStateChanged, User } from "firebase/auth";
 
 export function FirebaseDebug() {
-  const [config, setConfig] = useState<any>(null);
-  const [authState, setAuthState] = useState<any>(null);
+  const [config, setConfig] = useState<Record<string, string | undefined> | null>(null);
+  const [authState, setAuthState] = useState<User | null>(null);
   const [firestoreTest, setFirestoreTest] = useState<string>("Testing...");
 
   useEffect(() => {

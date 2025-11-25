@@ -1,5 +1,6 @@
 
 import Head from "next/head";
+import Image from "next/image";
 import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import { Header } from "@/components/Layout/Header";
@@ -20,6 +21,13 @@ import { BookingValidationDialog } from "@/components/Tours/BookingValidationDia
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { useToursData } from "@/contexts/ContentDataContext";
+
+type PendingBookingsSummary = Awaited<ReturnType<typeof checkUserPendingBookings>>;
+
+type ValidationDialogData = PendingBookingsSummary & {
+  forceAllow?: boolean;
+  customMessage?: string;
+};
 
 export default function TourDetailPage() {
   const router = useRouter();
@@ -46,12 +54,12 @@ export default function TourDetailPage() {
   });
   const [isBooking, setIsBooking] = useState(false);
   const [showValidationDialog, setShowValidationDialog] = useState(false);
-  const [validationData, setValidationData] = useState<any>(null);
+  const [validationData, setValidationData] = useState<ValidationDialogData | null>(null);
 
   // Find tour only after router query is loaded
   const tourId = Array.isArray(id) ? id[0] : id;
   const tour = router.isReady && tourId ? tours.find((t) => t.id === tourId) : null;
- 
+
   // Update form data when user is authenticated
   useEffect(() => {
     if (user) {
@@ -107,7 +115,7 @@ export default function TourDetailPage() {
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Check if user is authenticated
     if (!user) {
       toast({
@@ -131,23 +139,23 @@ export default function TourDetailPage() {
       // Import validation and security utilities
       const { tourBookingSchema, validateForm } = await import('@/lib/validation');
       const { sanitizeUserInput } = await import('@/lib/security');
-      
+
       // Prepare data for validation
       const formattedBookingData = {
         ...bookingData,
         groupSize: Number(bookingData.groupSize),
       };
-      
+
       // Validate booking data
       const validation = validateForm(tourBookingSchema, formattedBookingData);
-      
-      if (!validation.success) {
+
+      if (!validation.success || !validation.data) {
         // Show specific validation errors
         const errorMessages = Object.entries(validation.errors || {}).map(([field, message]) => {
           const fieldName = field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1');
           return `${fieldName}: ${message}`;
         });
-        
+
         toast({
           title: "Validation Error",
           description: errorMessages.join(". "),
@@ -157,15 +165,16 @@ export default function TourDetailPage() {
       }
 
       // Sanitize validated data
+      const validatedData = validation.data;
       const sanitizedData = {
-        ...validation.data,
-        name: sanitizeUserInput(validation.data.name, 'text'),
-        email: sanitizeUserInput(validation.data.email, 'email'),
-        phone: sanitizeUserInput(validation.data.phone, 'phone'),
-        specialRequests: validation.data.specialRequests ? sanitizeUserInput(validation.data.specialRequests, 'text') : '',
-        guestName: validation.data.guestName ? sanitizeUserInput(validation.data.guestName, 'text') : '',
-        guestEmail: validation.data.guestEmail ? sanitizeUserInput(validation.data.guestEmail, 'email') : '',
-        guestPhone: validation.data.guestPhone ? sanitizeUserInput(validation.data.guestPhone, 'phone') : '',
+        ...validatedData,
+        name: sanitizeUserInput(validatedData.name, 'text'),
+        email: sanitizeUserInput(validatedData.email, 'email'),
+        phone: sanitizeUserInput(validatedData.phone || '', 'phone'),
+        specialRequests: validatedData.specialRequests ? sanitizeUserInput(validatedData.specialRequests, 'text') : '',
+        guestName: validatedData.guestName ? sanitizeUserInput(validatedData.guestName, 'text') : '',
+        guestEmail: validatedData.guestEmail ? sanitizeUserInput(validatedData.guestEmail, 'email') : '',
+        guestPhone: validatedData.guestPhone ? sanitizeUserInput(validatedData.guestPhone, 'phone') : '',
       };
 
       // Update booking data with sanitized values
@@ -177,14 +186,14 @@ export default function TourDetailPage() {
 
       // Check for existing bookings first
       const existingBookings = await checkUserPendingBookings(user.uid);
-      
+
       // Validation logic
       if (existingBookings.hasPending || existingBookings.hasConfirmed) {
         // Filter for pending guest bookings (identified via guest info on tour bookings)
         const pendingGuestBookings = existingBookings.bookings.filter(
           (b) => b.status === "pending" && b.bookingType === "tour" && Boolean(b.guestName)
         );
-        
+
         const isGuestBooking = bookingData.bookingType === 'guest';
         let forceAllow = false;
         let customMessage = "";
@@ -194,7 +203,7 @@ export default function TourDetailPage() {
           if (existingBookings.hasPending && pendingGuestBookings.length < 3) {
             forceAllow = true;
           } else if (pendingGuestBookings.length >= 3) {
-             customMessage = `You have reached the limit of 3 pending guest bookings. Please wait for confirmation or cancel existing bookings.`;
+            customMessage = `You have reached the limit of 3 pending guest bookings. Please wait for confirmation or cancel existing bookings.`;
           }
         }
 
@@ -209,7 +218,6 @@ export default function TourDetailPage() {
 
       await proceedWithBooking();
     } catch (error) {
-      console.error("Error validating booking:", error);
       toast({
         title: "Validation Error",
         description: error instanceof Error ? error.message : "Please check your input and try again.",
@@ -248,7 +256,7 @@ export default function TourDetailPage() {
       };
 
       const bookingId = await createBooking(booking);
-      
+
       // Redirect to confirmation page instead of showing toast
       router.push(`/booking-confirmation/${bookingId}`);
 
@@ -269,8 +277,7 @@ export default function TourDetailPage() {
       });
       setSelectedDate(undefined);
 
-    } catch (error) {
-      console.error("Booking error:", error);
+    } catch {
       toast({
         title: "Booking Failed",
         description: "There was an error processing your booking. Please try again.",
@@ -298,21 +305,23 @@ export default function TourDetailPage() {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => router.push("/tours")}
                   className="mb-4"
                 >
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Tours
                 </Button>
-                
+
                 <div className="mb-6">
                   <div className="relative h-96 rounded-lg overflow-hidden mb-4">
-                    <img
+                    <Image
                       src={tour.images[selectedImage]}
                       alt={`${tour.title} - Image ${selectedImage + 1}`}
-                      className="w-full h-full object-cover"
+                      fill
+                      className="object-cover"
+                      priority
                     />
                   </div>
                   <div className="grid grid-cols-4 gap-2">
@@ -322,7 +331,12 @@ export default function TourDetailPage() {
                         onClick={() => setSelectedImage(idx)}
                         className={`relative h-24 rounded-lg overflow-hidden ${selectedImage === idx ? "ring-2 ring-blue-600" : ""}`}
                       >
-                        <img src={img} alt={`${tour.title} thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                        <Image
+                          src={img}
+                          alt={`${tour.title} thumbnail ${idx + 1}`}
+                          fill
+                          className="object-cover"
+                        />
                       </button>
                     ))}
                   </div>
@@ -422,9 +436,9 @@ export default function TourDetailPage() {
                     <form onSubmit={handleBookingSubmit} className="space-y-4">
                       <div>
                         <Label className="text-base font-semibold mb-3 block">Booking Type</Label>
-                        <RadioGroup 
-                          value={bookingData.bookingType} 
-                          onValueChange={(value: "self" | "guest") => setBookingData({...bookingData, bookingType: value})}
+                        <RadioGroup
+                          value={bookingData.bookingType}
+                          onValueChange={(value: "self" | "guest") => setBookingData({ ...bookingData, bookingType: value })}
                         >
                           <div className="flex items-center space-x-2">
                             <RadioGroupItem value="self" id="self" />
@@ -445,7 +459,7 @@ export default function TourDetailPage() {
                             id="name"
                             required
                             value={bookingData.name}
-                            onChange={(e) => setBookingData({...bookingData, name: e.target.value})}
+                            onChange={(e) => setBookingData({ ...bookingData, name: e.target.value })}
                             className="pl-10"
                             placeholder="John Doe"
                             disabled={!!user}
@@ -465,7 +479,7 @@ export default function TourDetailPage() {
                             type="email"
                             required
                             value={bookingData.email}
-                            onChange={(e) => setBookingData({...bookingData, email: e.target.value})}
+                            onChange={(e) => setBookingData({ ...bookingData, email: e.target.value })}
                             className="pl-10"
                             placeholder="john@example.com"
                             disabled={!!user}
@@ -481,7 +495,7 @@ export default function TourDetailPage() {
                           <div className="border-t pt-4">
                             <h4 className="font-semibold mb-3">Guest Information</h4>
                           </div>
-                          
+
                           <div>
                             <Label htmlFor="guestName">Guest Full Name *</Label>
                             <div className="relative">
@@ -490,7 +504,7 @@ export default function TourDetailPage() {
                                 id="guestName"
                                 required
                                 value={bookingData.guestName}
-                                onChange={(e) => setBookingData({...bookingData, guestName: e.target.value})}
+                                onChange={(e) => setBookingData({ ...bookingData, guestName: e.target.value })}
                                 className="pl-10"
                                 placeholder="Guest Name"
                               />
@@ -506,7 +520,7 @@ export default function TourDetailPage() {
                                 type="email"
                                 required
                                 value={bookingData.guestEmail}
-                                onChange={(e) => setBookingData({...bookingData, guestEmail: e.target.value})}
+                                onChange={(e) => setBookingData({ ...bookingData, guestEmail: e.target.value })}
                                 className="pl-10"
                                 placeholder="guest@example.com"
                               />
@@ -519,7 +533,7 @@ export default function TourDetailPage() {
                               id="guestPhone"
                               value={bookingData.guestPhone}
                               onChange={(phone, countryCode) => setBookingData({
-                                ...bookingData, 
+                                ...bookingData,
                                 guestPhone: phone,
                                 guestPhoneCountryCode: countryCode
                               })}
@@ -537,7 +551,7 @@ export default function TourDetailPage() {
                           id="phone"
                           value={bookingData.phone}
                           onChange={(phone, countryCode) => setBookingData({
-                            ...bookingData, 
+                            ...bookingData,
                             phone: phone,
                             phoneCountryCode: countryCode
                           })}
@@ -556,7 +570,7 @@ export default function TourDetailPage() {
                           max={tour.groupSize.max}
                           required
                           value={bookingData.groupSize}
-                          onChange={(e) => setBookingData({...bookingData, groupSize: Number(e.target.value)})}
+                          onChange={(e) => setBookingData({ ...bookingData, groupSize: Number(e.target.value) })}
                         />
                         <p className="text-xs text-gray-500 mt-1">
                           Min: {tour.groupSize.min}, Max: {tour.groupSize.max}
@@ -579,7 +593,7 @@ export default function TourDetailPage() {
                         <Textarea
                           id="requests"
                           value={bookingData.specialRequests}
-                          onChange={(e) => setBookingData({...bookingData, specialRequests: e.target.value})}
+                          onChange={(e) => setBookingData({ ...bookingData, specialRequests: e.target.value })}
                           placeholder="Dietary restrictions, accessibility needs, etc."
                           rows={3}
                         />
@@ -600,9 +614,9 @@ export default function TourDetailPage() {
                         </div>
                       </div>
 
-                      <Button 
-                        type="submit" 
-                        className="w-full bg-blue-600 hover:bg-blue-700" 
+                      <Button
+                        type="submit"
+                        className="w-full bg-blue-600 hover:bg-blue-700"
                         size="lg"
                         disabled={isBooking || authLoading}
                       >

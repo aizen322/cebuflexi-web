@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextApiRequest, NextApiResponse } from 'next';
 import { withApiSecurity, withErrorHandler } from '@/lib/api-middleware';
 
@@ -20,16 +21,16 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 
   // Test 1: CSRF Utilities Import
   try {
-    const { 
-      generateCSRFToken, 
-      validateCSRFToken, 
+    const {
+      generateCSRFToken,
+      validateCSRFToken,
       getCSRFTokenFromRequest,
       generateToken,
       getSessionId,
       CSRF_CONFIG
     } = await import('@/lib/csrf');
 
-    if (generateCSRFToken && validateCSRFToken && CSRF_CONFIG) {
+    if (typeof generateCSRFToken === 'function' && typeof validateCSRFToken === 'function' && CSRF_CONFIG) {
       checks.push({
         name: 'CSRF Utilities Import',
         status: 'pass',
@@ -47,7 +48,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'CSRF Utilities Import',
       status: 'fail',
-      message: `Import error: ${error.message}`
+      message: `Import error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -74,7 +75,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'CSRF Configuration',
       status: 'fail',
-      message: `Configuration error: ${error.message}`
+      message: `Configuration error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -104,7 +105,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Token Generation',
       status: 'fail',
-      message: `Token generation error: ${error.message}`
+      message: `Token generation error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -116,12 +117,12 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     const mockReq1 = {
       cookies: { 'session-id': 'test-session-123' },
       headers: { 'x-forwarded-for': '192.168.1.1', 'user-agent': 'test-browser' }
-    } as any;
+    } as unknown as NextApiRequest;
 
     const mockReq2 = {
       cookies: {},
       headers: { 'x-forwarded-for': '192.168.1.2', 'user-agent': 'test-browser' }
-    } as any;
+    } as unknown as NextApiRequest;
 
     const sessionId1 = getSessionId(mockReq1);
     const sessionId2 = getSessionId(mockReq2);
@@ -144,7 +145,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Session ID Generation',
       status: 'fail',
-      message: `Session ID generation error: ${error.message}`
+      message: `Session ID generation error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -156,7 +157,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     const mockReq = {
       cookies: { 'session-id': 'test-session' },
       headers: { 'x-forwarded-for': '192.168.1.1' }
-    } as any;
+    } as unknown as NextApiRequest;
 
     const token = generateCSRFToken(mockReq);
 
@@ -178,7 +179,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'CSRF Token Generation',
       status: 'fail',
-      message: `CSRF token generation error: ${error.message}`
+      message: `CSRF token generation error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -190,7 +191,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     const mockReq = {
       cookies: { 'session-id': 'test-session' },
       headers: { 'x-forwarded-for': '192.168.1.1' }
-    } as any;
+    } as unknown as NextApiRequest;
 
     const token = generateCSRFToken(mockReq);
     const isValid = validateCSRFToken(mockReq, token);
@@ -214,7 +215,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Token Validation',
       status: 'fail',
-      message: `Token validation error: ${error.message}`
+      message: `Token validation error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -227,7 +228,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     const mockReqHeader = {
       headers: { 'x-csrf-token': 'test-token-123' },
       body: {}
-    } as any;
+    } as unknown as NextApiRequest;
 
     const tokenFromHeader = getCSRFTokenFromRequest(mockReqHeader);
 
@@ -235,7 +236,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     const mockReqBody = {
       headers: {},
       body: { _csrf: 'test-token-456' }
-    } as any;
+    } as unknown as NextApiRequest;
 
     const tokenFromBody = getCSRFTokenFromRequest(mockReqBody);
 
@@ -257,7 +258,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Token Extraction from Request',
       status: 'fail',
-      message: `Token extraction error: ${error.message}`
+      message: `Token extraction error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -266,7 +267,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   try {
     const { withCSRF } = await import('@/lib/csrf');
 
-    if (withCSRF) {
+    if (typeof withCSRF === 'function') {
       checks.push({
         name: 'CSRF Middleware',
         status: 'pass',
@@ -284,7 +285,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'CSRF Middleware',
       status: 'fail',
-      message: `CSRF middleware error: ${error.message}`
+      message: `CSRF middleware error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -293,7 +294,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   try {
     const { clientCSRF } = await import('@/lib/csrf');
 
-    if (clientCSRF && clientCSRF.getToken && clientCSRF.addTokenToHeaders) {
+    if (clientCSRF && typeof clientCSRF.getToken === 'function' && typeof clientCSRF.addTokenToHeaders === 'function') {
       checks.push({
         name: 'Client-Side CSRF Utilities',
         status: 'pass',
@@ -311,7 +312,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Client-Side CSRF Utilities',
       status: 'fail',
-      message: `Client-side CSRF utilities error: ${error.message}`
+      message: `Client-side CSRF utilities error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -320,7 +321,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   try {
     // Check if CSRF token endpoint exists
     const csrfEndpointExists = true; // We created this endpoint
-    
+
     if (csrfEndpointExists) {
       checks.push({
         name: 'CSRF Token Endpoint',
@@ -339,7 +340,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'CSRF Token Endpoint',
       status: 'fail',
-      message: `CSRF endpoint error: ${error.message}`
+      message: `CSRF endpoint error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -352,7 +353,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     const unprotectedMethods = ['GET', 'HEAD', 'OPTIONS'];
 
     let protectionPassed = true;
-    
+
     protectedMethods.forEach(method => {
       if (!requiresCSRFProtection(method)) {
         protectionPassed = false;
@@ -383,7 +384,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Method Protection',
       status: 'fail',
-      message: `Method protection error: ${error.message}`
+      message: `Method protection error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -391,9 +392,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   // Test 12: Current CSRF Status
   try {
     const { generateCSRFToken } = await import('@/lib/csrf');
-    
+
     const currentToken = generateCSRFToken(req);
-    
+
     checks.push({
       name: 'Current CSRF Status',
       status: 'pass',
@@ -435,7 +436,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 };
 
 export default withErrorHandler(
-  withApiSecurity(null, {
+  withApiSecurity(undefined, {
     rateLimit: { windowMs: 60 * 1000, maxRequests: 10 }
   })(handler)
 );

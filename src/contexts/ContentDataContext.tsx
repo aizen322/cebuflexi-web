@@ -94,15 +94,29 @@ export function ContentDataProvider({ children }: { children: ReactNode }) {
         refresh,
       });
     } catch (error) {
-      console.error("[ContentData] Failed to load content:", error);
-      setState((prev) => ({
-        ...prev,
+      // Handle permission errors gracefully - use fallback data
+      const firebaseError = error as { code?: string };
+      if (firebaseError.code === "permission-denied") {
+        // Use fallback data for unauthenticated users or permission issues
+        setState({
+          ...defaultValue,
+          loading: false,
+          error: undefined,
+          refresh,
+        });
+        return;
+      }
+      
+      // For other errors, still use fallback data but log the error
+      if (process.env.NODE_ENV === "development") {
+        console.error("[ContentData] Failed to load content:", error);
+      }
+      setState({
+        ...defaultValue,
         loading: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to load content collections.",
-      }));
+        error: undefined,
+        refresh,
+      });
     }
   }, []);
 

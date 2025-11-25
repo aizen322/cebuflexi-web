@@ -20,7 +20,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<Data>) => {
 
 // Apply security middleware
 export default withErrorHandler(
-  withApiSecurity(null, {
+  withApiSecurity(undefined, {
     rateLimit: { windowMs: 15 * 60 * 1000, maxRequests: 100 }, // 100 requests per 15 minutes
   })(handler)
 );

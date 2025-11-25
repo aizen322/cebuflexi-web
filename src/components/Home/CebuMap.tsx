@@ -1,6 +1,21 @@
 import { useEffect, useRef, useMemo } from "react";
 import { useContentData } from "@/contexts/ContentDataContext";
 
+// Declare Google Maps types on window
+declare global {
+  interface Window {
+    google?: {
+      maps: {
+        Map: new (element: HTMLElement, options: Record<string, unknown>) => unknown;
+        Marker: new (options: Record<string, unknown>) => unknown;
+        SymbolPath: {
+          CIRCLE: number;
+        };
+      };
+    };
+  }
+}
+
 export function CebuMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const { landmarks } = useContentData();
@@ -18,10 +33,14 @@ export function CebuMap() {
     if (!mapRef.current || cebuHotspots.length === 0) return;
 
     const loadMap = () => {
-      const google = (window as any).google;
+      const google = window.google;
       if (!google) return;
+      const mapElement = mapRef.current;
+      if (!mapElement) {
+        return;
+      }
 
-      const map = new google.maps.Map(mapRef.current!, {
+      const map = new google.maps.Map(mapElement, {
         center: { lat: 10.3157, lng: 123.8854 },
         zoom: 10,
         styles: [
@@ -50,7 +69,7 @@ export function CebuMap() {
       });
     };
 
-    if ((window as any).google) {
+    if (window.google) {
       loadMap();
     } else {
       const script = document.createElement("script");

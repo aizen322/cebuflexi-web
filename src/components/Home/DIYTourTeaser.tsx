@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Map, Calendar, Sparkles, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import { AppImage } from "@/components/ui/app-image";
 
 export function DIYTourTeaser() {
   const features = [
@@ -87,10 +88,13 @@ export function DIYTourTeaser() {
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img
+              <AppImage
                 src="https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=400&h=300&fit=crop"
                 alt="Fort San Pedro"
-                className="w-full h-40 object-cover"
+                fill
+                containerClassName="w-full h-40"
+                className="object-cover"
+                sizes="(min-width: 1024px) 25vw, 50vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
                 <div>
@@ -104,10 +108,13 @@ export function DIYTourTeaser() {
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img
+              <AppImage
                 src="https://images.unsplash.com/photo-1548013146-72479768bada?w=400&h=300&fit=crop"
                 alt="Magellan's Cross"
-                className="w-full h-40 object-cover"
+                fill
+                containerClassName="w-full h-40"
+                className="object-cover"
+                sizes="(min-width: 1024px) 25vw, 50vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
                 <div>
@@ -121,10 +128,13 @@ export function DIYTourTeaser() {
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img
+              <AppImage
                 src="https://images.unsplash.com/photo-1502920514313-52581002a659?w=400&h=300&fit=crop"
                 alt="Santo Niño Church"
-                className="w-full h-40 object-cover"
+                fill
+                containerClassName="w-full h-40"
+                className="object-cover"
+                sizes="(min-width: 1024px) 25vw, 50vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
                 <div>
@@ -138,10 +148,13 @@ export function DIYTourTeaser() {
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img
+              <AppImage
                 src="https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?w=400&h=300&fit=crop"
                 alt="Taoist Temple"
-                className="w-full h-40 object-cover"
+                fill
+                containerClassName="w-full h-40"
+                className="object-cover"
+                sizes="(min-width: 1024px) 25vw, 50vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
                 <div>

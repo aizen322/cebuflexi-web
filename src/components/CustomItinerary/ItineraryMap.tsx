@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { Landmark } from "@/types";
 import dynamic from "next/dynamic";
 
@@ -36,17 +37,18 @@ interface ItineraryMapProps {
 
 export function ItineraryMap({ landmarks, selectedLandmarks, markerColor = "blue" }: ItineraryMapProps) {
   const [isMounted, setIsMounted] = useState(false);
-  const [L, setL] = useState<any>(null);
+  const [L, setL] = useState<typeof import('leaflet') | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
-    
+
     // Import Leaflet CSS and library
     import("leaflet").then((leaflet) => {
       setL(leaflet);
-      
+
       // Fix for default marker icons in Next.js
-      delete (leaflet.Icon.Default.prototype as any)._getIconUrl;
+      const iconDefault = leaflet.Icon.Default.prototype as unknown as { _getIconUrl?: string };
+      delete iconDefault._getIconUrl;
       leaflet.Icon.Default.mergeOptions({
         iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
         iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
@@ -120,7 +122,7 @@ export function ItineraryMap({ landmarks, selectedLandmarks, markerColor = "blue
         {landmarks.map((landmark) => {
           const isSelected = selectedLandmarks.some((l) => l.id === landmark.id);
           const selectedIndex = selectedLandmarks.findIndex((l) => l.id === landmark.id);
-          
+
           return (
             <Marker
               key={landmark.id}
@@ -136,9 +138,11 @@ export function ItineraryMap({ landmarks, selectedLandmarks, markerColor = "blue
                     </p>
                   )}
                   <p className="text-xs text-gray-600 mb-2">{landmark.description}</p>
-                  <img
+                  <Image
                     src={landmark.image}
                     alt={landmark.name}
+                    width={320}
+                    height={180}
                     className="w-full h-24 object-cover rounded"
                   />
                   <p className="text-xs text-gray-500 mt-1">

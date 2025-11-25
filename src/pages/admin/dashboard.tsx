@@ -56,6 +56,7 @@ interface AdminDashboardPageProps {
 
 export default function AdminDashboardPage({ serverUser }: AdminDashboardPageProps) {
   const router = useRouter();
+  void serverUser;
   const [stats, setStats] = useState<DashboardStats>({
     pendingBookings: 0,
     totalUsers: 0,
@@ -96,7 +97,6 @@ export default function AdminDashboardPage({ serverUser }: AdminDashboardPagePro
         setError(null);
       },
       (error) => {
-        console.error("Error listening to bookings:", error);
         if (error.code === "permission-denied") {
           setError("Permission denied. Please verify your admin role and Firestore rules are deployed.");
         } else {
@@ -126,12 +126,12 @@ export default function AdminDashboardPage({ serverUser }: AdminDashboardPagePro
         activeVehicles: statsData.activeVehicles,
       });
 
-    } catch (error: any) {
-      console.error("Error fetching dashboard data:", error);
-      if (error.code === "permission-denied") {
+    } catch (error) {
+      const err = error as { code?: string; message?: string };
+      if (err.code === "permission-denied") {
         setError("Permission denied. Please verify your admin role and Firestore rules are deployed.");
       } else {
-        setError("Error loading dashboard data: " + error.message);
+        setError("Error loading dashboard data: " + (err.message || "Unknown error"));
       }
     } finally {
       setLoading(false);
@@ -304,7 +304,7 @@ export default function AdminDashboardPage({ serverUser }: AdminDashboardPagePro
                 <div className="space-y-4">
                   {recentBookings.map((booking) => (
                     <div
-                      key={booking.id}
+                      key={booking.id!}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
                     >
                       <div className="flex items-center space-x-4 flex-1 min-w-0">
@@ -330,7 +330,7 @@ export default function AdminDashboardPage({ serverUser }: AdminDashboardPagePro
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => router.push(`/admin/bookings/${booking.id}`)}
+                            onClick={() => router.push(`/admin/bookings/${booking.id!}`)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -390,7 +390,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
         serverUser,
       },
     };
-  } catch (error) {
+  } catch {
     // Redirect already handled by requireAdmin
     return {
       props: {},

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Map, Route, Sparkles } from "lucide-react";
+import { Route, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export function DIYTourCallout() {

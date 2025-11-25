@@ -36,11 +36,6 @@ export default function LoginPage() {
     setSignInOpen(true);
   };
 
-  const handleSignInSuccess = () => {
-    const redirect = (router.query.redirect as string) || "/";
-    router.push(redirect);
-  };
-
   if (!mounted || loading) {
     return (
       <>
@@ -88,4 +83,6 @@ export default function LoginPage() {
     </>
   );
 }
+
+LoginPage.getLayout = (page: React.ReactElement) => page;
 

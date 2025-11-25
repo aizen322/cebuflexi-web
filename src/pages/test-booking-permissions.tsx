@@ -10,7 +10,7 @@ import { CheckCircle, XCircle } from "lucide-react";
 export default function TestBookingPermissionsPage() {
   const { user } = useAuth();
   const [testing, setTesting] = useState(false);
-  const [result, setResult] = useState<{ success: boolean; message: string; error?: any } | null>(null);
+  const [result, setResult] = useState<{ success: boolean; message: string; error?: { code?: string; message?: string; details?: string; stack?: string } } | null>(null);
   const [authStatus, setAuthStatus] = useState<{ authenticated: boolean; uid?: string; token?: string } | null>(null);
 
   useEffect(() => {
@@ -28,6 +28,7 @@ export default function TestBookingPermissionsPage() {
           token: token.substring(0, 20) + "...",
         });
       } catch (error) {
+        console.error("Error checking auth status:", error);
         setAuthStatus({ authenticated: false });
       }
     } else {
@@ -93,19 +94,20 @@ export default function TestBookingPermissionsPage() {
         success: true,
         message: "✅ Booking creation test passed! Rules are working correctly.",
       });
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as { code?: string; message?: string; stack?: string };
       console.error("Test booking error:", error);
-      console.error("Error code:", error.code);
-      console.error("Error message:", error.message);
+      console.error("Error code:", err.code);
+      console.error("Error message:", err.message);
       
       setResult({
         success: false,
-        message: `❌ Booking creation failed: ${error.message}`,
+        message: `❌ Booking creation failed: ${err.message}`,
         error: {
-          code: error.code,
-          message: error.message,
-          details: error.toString(),
-          stack: error.stack,
+          code: err.code,
+          message: err.message,
+          details: String(error),
+          stack: err.stack,
         },
       });
     } finally {

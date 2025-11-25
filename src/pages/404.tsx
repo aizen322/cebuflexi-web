@@ -11,7 +11,7 @@ export default function NotFound() {
         <meta name="description" content="Page not found" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      
+
       <main className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold text-gray-900">404</h1>
@@ -26,3 +26,6 @@ export default function NotFound() {
     </>
   )
 }
+
+NotFound.getLayout = (page: React.ReactElement) => page;
+

@@ -4,11 +4,11 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { AdminProtectedRoute } from "@/components/Auth/AdminProtectedRoute";
 import { AdminLayout } from "@/components/Admin/AdminLayout";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Car, Eye, EyeOff, Plus, Edit } from "lucide-react";
+import { Eye, EyeOff, Plus, Edit } from "lucide-react";
 import Link from "next/link";
 import { COLLECTIONS } from "@/lib/firestore-collections";
 import { Vehicle } from "@/types";
@@ -43,6 +43,7 @@ export default function AdminVehiclesPage() {
         description: "Vehicle availability updated",
       });
     } catch (error) {
+      console.error("Error updating vehicle availability:", error);
       toast({
         title: "Error",
         description: "Failed to update vehicle",

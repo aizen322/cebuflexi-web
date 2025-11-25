@@ -44,7 +44,8 @@ function toRadians(degrees: number): number {
  * @param distance Distance in kilometers
  * @returns Travel time in minutes
  */
-export function estimateTravelTime(distance: number): number {
+export function estimateTravelTime(_distance: number): number {
+  void _distance;
   // Fixed average travel time of 20 minutes between landmarks
   // This accounts for city traffic and short distances
   return 20;

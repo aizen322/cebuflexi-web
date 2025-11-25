@@ -1,4 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { ZodSchema, ZodError } from 'zod';
 import { verifyIdToken } from './firebase-admin';
 import { getUserRole } from './firebase-admin';
 
@@ -25,7 +26,7 @@ export function withAuth(handler: (req: AuthenticatedRequest, res: NextApiRespon
       const token = authHeader.substring(7);
       const verification = await verifyIdToken(token);
 
-      if (!verification.success) {
+      if (!verification.success || !verification.user) {
         return res.status(401).json({ error: 'Unauthorized - Invalid token' });
       }
 
@@ -88,7 +89,7 @@ export function withRateLimit(windowMs: number, maxRequests: number) {
   };
 }
 
-export function withValidation<T>(schema: any) {
+export function withValidation<T>(schema: ZodSchema<T>) {
   return function(handler: (req: NextApiRequest & { validatedData?: T }, res: NextApiResponse) => Promise<void>) {
     return async (req: NextApiRequest & { validatedData?: T }, res: NextApiResponse) => {
       try {
@@ -96,7 +97,7 @@ export function withValidation<T>(schema: any) {
         req.validatedData = validatedData;
         return handler(req, res);
       } catch (error) {
-        if (error.name === 'ZodError') {
+        if (error instanceof ZodError) {
           return res.status(400).json({
             error: 'Validation failed',
             details: error.errors,
@@ -166,14 +167,14 @@ function getClientIP(req: NextApiRequest): string {
 
 // Combined middleware for common API routes
 export function withApiSecurity<T>(
-  schema?: any,
+  schema?: ZodSchema<T>,
   options: {
     auth?: boolean;
     role?: string | string[];
     rateLimit?: { windowMs: number; maxRequests: number };
   } = {}
 ) {
-  return function(handler: (req: NextApiRequest & { user?: any; validatedData?: T }, res: NextApiResponse) => Promise<void>) {
+  return function(handler: (req: NextApiRequest & { user?: { uid: string; email?: string; role?: string }; validatedData?: T }, res: NextApiResponse) => Promise<void>) {
     let middleware = handler;
 
     // Apply validation first
@@ -214,7 +215,7 @@ export function withErrorHandler(handler: (req: NextApiRequest, res: NextApiResp
       if (!res.headersSent) {
         res.status(500).json({
           error: 'Internal server error',
-          message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+          message: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : 'Something went wrong') : 'Something went wrong',
         });
       }
     }

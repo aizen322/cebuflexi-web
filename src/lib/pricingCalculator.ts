@@ -1,5 +1,3 @@
-import { Landmark } from "@/types";
-
 // Pricing constants
 const BASE_RATE = 2000; // ₱2000 for first 3 hours
 const BASE_HOURS = 3;

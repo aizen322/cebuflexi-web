@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
+import Image from "next/image";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AdminProtectedRoute } from "@/components/Auth/AdminProtectedRoute";
@@ -104,11 +105,11 @@ export default function AdminEditTourPage() {
         // Normalize itinerary data - join arrays with commas for form display
         const normalizedItinerary = (tour.itinerary || []).map((day) => ({
           ...day,
-          activities: Array.isArray(day.activities) 
-            ? [day.activities.join(", ")] 
+          activities: Array.isArray(day.activities)
+            ? [day.activities.join(", ")]
             : [day.activities || ""].filter(Boolean),
-          meals: Array.isArray(day.meals) 
-            ? [day.meals.join(", ")] 
+          meals: Array.isArray(day.meals)
+            ? [day.meals.join(", ")]
             : [day.meals || ""].filter(Boolean),
         }));
 
@@ -133,11 +134,11 @@ export default function AdminEditTourPage() {
         if (normalizedItinerary.length > 0) {
           replaceItinerary(normalizedItinerary);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error loading tour:", error);
         toast({
           title: "Error",
-          description: error.message || "Failed to load tour",
+          description: error instanceof Error ? error.message : "Failed to load tour",
           variant: "destructive",
         });
         router.push("/admin/tours");
@@ -175,7 +176,7 @@ export default function AdminEditTourPage() {
     if (files.length === 0) {
       return;
     }
-    
+
     // Validate each file
     const invalidFiles = files.filter(file => !validateImageFile(file).valid);
     if (invalidFiles.length > 0) {
@@ -219,7 +220,7 @@ export default function AdminEditTourPage() {
     const files = Array.from(e.dataTransfer.files).filter(
       file => file.type.startsWith('image/')
     );
-    
+
     if (files.length > 0) {
       processFiles(files);
     }
@@ -228,7 +229,7 @@ export default function AdminEditTourPage() {
   function removeImage(index: number) {
     // Check if it's an existing image or a new file
     const totalExisting = existingImages.length;
-    
+
     if (index < totalExisting) {
       // Remove existing image
       const newExisting = existingImages.filter((_, i) => i !== index);
@@ -278,7 +279,7 @@ export default function AdminEditTourPage() {
       // Process itinerary - split comma-separated activities and meals back into arrays
       const processedItinerary = data.itinerary.map((day) => ({
         ...day,
-        activities: day.activities[0] 
+        activities: day.activities[0]
           ? day.activities[0].split(",").map(a => a.trim()).filter(Boolean)
           : day.activities,
         meals: day.meals[0]
@@ -303,11 +304,11 @@ export default function AdminEditTourPage() {
       });
 
       router.push("/admin/tours");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating tour:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update tour",
+        description: error instanceof Error ? error.message : "Failed to update tour",
         variant: "destructive",
       });
     } finally {
@@ -387,7 +388,7 @@ export default function AdminEditTourPage() {
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
                   <Select
-                    onValueChange={(value) => setValue("category", value as any)}
+                    onValueChange={(value: string) => setValue("category", value as "Beach" | "Adventure" | "Cultural" | "Food")}
                     value={watch("category")}
                   >
                     <SelectTrigger>
@@ -547,18 +548,18 @@ export default function AdminEditTourPage() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 p-4 rounded-lg border-2 border-dashed transition-colors ${
-                  isDragging
+                className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 p-4 rounded-lg border-2 border-dashed transition-colors ${isDragging
                     ? "border-primary bg-primary/5"
                     : "border-muted-foreground/25 hover:border-primary/50"
-                }`}
+                  }`}
               >
                 {imagePreviews.map((preview, index) => (
                   <div key={index} className="relative group aspect-square">
-                    <img
+                    <Image
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover rounded-lg"
+                      fill
+                      className="object-cover rounded-lg"
                     />
                     <Button
                       type="button"

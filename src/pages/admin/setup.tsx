@@ -39,8 +39,9 @@ export default function AdminSetupPage() {
       } else {
         setResult({ success: false, message: data.error || "Failed to setup admin" });
       }
-    } catch (error: any) {
-      setResult({ success: false, message: error.message || "An error occurred" });
+    } catch (error) {
+      const err = error as { message?: string };
+      setResult({ success: false, message: err.message || "An error occurred" });
     } finally {
       setLoading(false);
     }

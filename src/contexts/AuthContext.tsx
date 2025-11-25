@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { 
+import {
   User,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -35,10 +35,10 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   isAdmin: false,
-  signIn: async () => {},
-  signUp: async () => {},
-  signInWithGoogle: async () => {},
-  logout: async () => {},
+  signIn: async () => { },
+  signUp: async () => { },
+  signInWithGoogle: async () => { },
+  logout: async () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -75,26 +75,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Get ID token result to fetch custom claims (role)
           const tokenResult = await firebaseUser.getIdTokenResult();
           const role = (tokenResult.claims.role as "user" | "admin" | "moderator") || "user";
-          
+
           // Set session cookie (for server-side auth)
           await setSessionCookie(firebaseUser);
-          
+
           // Try to get user profile from Firestore with error handling
-          let userData: any = null;
+          let userData: { role?: string; createdAt?: { toDate: () => Date } } | null = null;
           try {
             // Check if db is initialized before attempting to read
             if (db) {
               const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
               if (userDoc.exists()) {
-                userData = userDoc.data();
+                userData = userDoc.data() as { role?: string; createdAt?: { toDate: () => Date } };
               }
             }
-          } catch (firestoreError: any) {
+          } catch (firestoreError) {
             // Handle offline/connection errors gracefully
             console.warn("Firestore read failed (may be offline):", firestoreError);
             // Continue with auth data only - user can still sign in
           }
-          
+
           if (userData) {
             // Use Firestore data if available
             setUser({
@@ -102,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: firebaseUser.email,
               displayName: firebaseUser.displayName,
               photoURL: firebaseUser.photoURL,
-              role: userData.role || role,
+              role: (userData.role as "user" | "admin" | "moderator") || role,
               createdAt: userData.createdAt?.toDate() || new Date(),
             });
           } else {
@@ -115,10 +115,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role: role,
               createdAt: new Date(),
             };
-            
+
             // Set user immediately with auth data
             setUser(newUserProfile);
-            
+
             // Try to sync with Firestore in background (non-blocking)
             if (db) {
               setDoc(doc(db, "users", firebaseUser.uid), {
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, displayName: string) => {
     const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
-    
+
     // Update Firebase Auth profile
     await updateProfile(firebaseUser, {
       displayName: displayName,
@@ -190,15 +190,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     const { user: firebaseUser } = await signInWithPopup(auth, provider);
-    
+
     // Set session cookie
     await setSessionCookie(firebaseUser);
-    
+
     // Check if user profile exists, create if not (with error handling)
     if (db) {
       try {
         const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-        
+
         if (!userDoc.exists()) {
           const userProfile = {
             uid: firebaseUser.uid,
@@ -236,10 +236,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.warn('Error clearing session cookie:', error);
     }
-    
+
     // Sign out from Firebase
     await signOut(auth);
-    
+
     // Redirect to home page
     if (typeof window !== 'undefined') {
       window.location.href = '/';

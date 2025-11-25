@@ -78,11 +78,11 @@ export function VirtualizedBookingsList({
           {bookings.map((booking) => {
             return (
               <TableRow
-                key={booking.id}
+                key={booking.id!}
                 className="hover:bg-accent/50"
               >
                 <TableCell className="font-mono text-xs">
-                  {booking.id.substring(0, 8)}...
+                  {booking.id!.substring(0, 8)}...
                 </TableCell>
                 <TableCell>
                   <div>
@@ -111,7 +111,7 @@ export function VirtualizedBookingsList({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => router.push(`/admin/bookings/${booking.id}`)}
+                    onClick={() => router.push(`/admin/bookings/${booking.id!}`)}
                   >
                     <Eye className="h-4 w-4" />
                   </Button>

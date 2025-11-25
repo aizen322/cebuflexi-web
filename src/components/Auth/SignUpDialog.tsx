@@ -34,7 +34,7 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!name || !email || !password || !confirmPassword) {
       setError("Please fill in all fields");
       return;
@@ -66,21 +66,22 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
       setPassword("");
       setConfirmPassword("");
       setAcceptTerms(false);
-    } catch (err: any) {
+    } catch (err) {
       let errorMessage = "Failed to create account. Please try again.";
-      
-      if (err.code === "auth/email-already-in-use") {
+
+      const error = err as { code?: string };
+      if (error.code === "auth/email-already-in-use") {
         errorMessage = "An account with this email already exists. Please sign in instead.";
-      } else if (err.code === "auth/weak-password") {
+      } else if (error.code === "auth/weak-password") {
         errorMessage = "Password is too weak. Please choose a stronger password with at least 6 characters.";
-      } else if (err.code === "auth/invalid-email") {
+      } else if (error.code === "auth/invalid-email") {
         errorMessage = "Please enter a valid email address.";
-      } else if (err.code === "auth/operation-not-allowed") {
+      } else if (error.code === "auth/operation-not-allowed") {
         errorMessage = "Account creation is currently disabled. Please contact support.";
-      } else if (err.code === "auth/network-request-failed") {
+      } else if (error.code === "auth/network-request-failed") {
         errorMessage = "Network error. Please check your internet connection and try again.";
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -94,17 +95,18 @@ export function SignUpDialog({ open, onOpenChange, onSwitchToSignIn }: SignUpDia
     try {
       await signInWithGoogle();
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err) {
       let errorMessage = "Failed to sign up with Google. Please try again.";
-      
-      if (err.code === "auth/popup-closed-by-user") {
+
+      const error = err as { code?: string };
+      if (error.code === "auth/popup-closed-by-user") {
         errorMessage = "Sign-up cancelled. Please try again if you want to continue.";
-      } else if (err.code === "auth/popup-blocked") {
+      } else if (error.code === "auth/popup-blocked") {
         errorMessage = "Popup blocked by browser. Please allow popups and try again.";
-      } else if (err.code === "auth/cancelled-popup-request") {
+      } else if (error.code === "auth/cancelled-popup-request") {
         errorMessage = "Sign-up cancelled. Please try again.";
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);

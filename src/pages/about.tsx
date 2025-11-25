@@ -4,7 +4,7 @@ import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Award, Heart, Users, Shield, Globe, Star } from "lucide-react";
+import { Award, Heart, Shield, Globe, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import { FadeIn } from "@/components/Animation/FadeIn";
 import { StaggerContainer, staggerItem } from "@/components/Animation/StaggerContainer";

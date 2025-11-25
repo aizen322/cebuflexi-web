@@ -8,7 +8,8 @@ import { AdminLayout } from "@/components/Admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BookingStatusBadge } from "@/components/Bookings/BookingStatusBadge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -20,21 +21,33 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { 
-  ArrowLeft, 
-  CheckCircle, 
-  XCircle, 
-  User, 
-  Calendar, 
-  DollarSign,
-  MapPin,
-  Car,
+import {
+  ArrowLeft,
+  CheckCircle,
+  XCircle,
+  User,
   Mail,
   Phone,
   CheckCircle2,
+  Printer,
+  ExternalLink,
+  MessageSquare,
 } from "lucide-react";
 import { format } from "date-fns";
 import { COLLECTIONS } from "@/lib/firestore-collections";
+import { useToursData, useVehiclesData } from "@/contexts/ContentDataContext";
+import { Tour, Vehicle } from "@/types";
+
+// Import new booking components
+import {
+  BookingStatusTimeline,
+  BookingPriceBreakdown,
+  TourBookingDetails,
+  VehicleBookingDetails,
+  CustomTourBookingDetails,
+} from "@/components/Bookings";
+
+import { checkVehicleAvailability } from "@/services/vehicleAvailabilityService";
 
 interface BookingDetails {
   id: string;
@@ -56,23 +69,43 @@ interface BookingDetails {
   specialRequests?: string;
   customizations?: string;
   itineraryDetails?: string;
+  guestName?: string;
+  guestEmail?: string;
+  guestPhone?: string;
 }
-
-import { checkVehicleAvailability } from "@/services/vehicleAvailabilityService";
-import { useVehiclesData } from "@/contexts/ContentDataContext";
 
 export default function AdminBookingDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const { toast } = useToast();
-  const { data: vehicles } = useVehiclesData(); // Fetch vehicles for stock count check
-  
+  const { data: tours } = useToursData();
+  const { data: vehicles } = useVehiclesData();
+
   const [booking, setBooking] = useState<BookingDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
+
+  // Get tour or vehicle data based on booking type
+  const tour: Tour | undefined = booking?.tourId
+    ? tours.find((t) => t.id === booking.tourId)
+    : undefined;
+  const vehicle: Vehicle | undefined = booking?.vehicleId
+    ? vehicles.find((v) => v.id === booking.vehicleId)
+    : undefined;
+
+  // Calculate rental days for vehicles
+  const rentalDays = booking
+    ? Math.max(
+        1,
+        Math.ceil(
+          (booking.endDate.getTime() - booking.startDate.getTime()) /
+            (1000 * 60 * 60 * 24)
+        )
+      )
+    : 1;
 
   useEffect(() => {
     if (id && typeof id === "string") {
@@ -118,9 +151,11 @@ export default function AdminBookingDetailPage() {
         specialRequests: data.specialRequests,
         customizations: data.customizations,
         itineraryDetails: data.itineraryDetails,
+        guestName: data.guestName,
+        guestEmail: data.guestEmail,
+        guestPhone: data.guestPhone,
       });
-    } catch (error) {
-      console.error("Error fetching booking:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load booking details",
@@ -133,22 +168,22 @@ export default function AdminBookingDetailPage() {
 
   async function handleConfirm() {
     if (!booking) return;
-    
+
     setActionLoading(true);
     try {
-      // Optional: Check availability before confirming if it's a vehicle booking
+      // Check availability before confirming if it's a vehicle booking
       if (booking.bookingType === "vehicle" && booking.vehicleId) {
-        const vehicle = vehicles.find(v => v.id === booking.vehicleId);
-        if (vehicle) {
+        const vehicleData = vehicles.find((v) => v.id === booking.vehicleId);
+        if (vehicleData) {
           const bookedCount = await checkVehicleAvailability(
-            booking.vehicleId, 
-            booking.startDate, 
+            booking.vehicleId,
+            booking.startDate,
             booking.endDate
           );
-          
-          if (vehicle.stockCount - bookedCount <= 0) {
+
+          if (vehicleData.stockCount - bookedCount <= 0) {
             const confirmOverride = window.confirm(
-              `Warning: This vehicle appears to be fully booked for these dates (${bookedCount}/${vehicle.stockCount} booked). Confirm anyway?`
+              `Warning: This vehicle appears to be fully booked for these dates (${bookedCount}/${vehicleData.stockCount} booked). Confirm anyway?`
             );
             if (!confirmOverride) {
               setActionLoading(false);
@@ -184,11 +219,9 @@ export default function AdminBookingDetailPage() {
         description: "Booking confirmed successfully",
       });
 
-      // Refresh booking data
       await fetchBookingDetails(booking.id);
       setShowConfirmDialog(false);
-    } catch (error) {
-      console.error("Error confirming booking:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to confirm booking",
@@ -201,7 +234,7 @@ export default function AdminBookingDetailPage() {
 
   async function handleCancel() {
     if (!booking) return;
-    
+
     setActionLoading(true);
     try {
       const user = auth.currentUser;
@@ -230,11 +263,9 @@ export default function AdminBookingDetailPage() {
         description: "Booking cancelled successfully",
       });
 
-      // Refresh booking data
       await fetchBookingDetails(booking.id);
       setShowCancelDialog(false);
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to cancel booking",
@@ -247,7 +278,7 @@ export default function AdminBookingDetailPage() {
 
   async function handleComplete() {
     if (!booking) return;
-    
+
     setActionLoading(true);
     try {
       const user = auth.currentUser;
@@ -276,11 +307,9 @@ export default function AdminBookingDetailPage() {
         description: "Booking marked as complete",
       });
 
-      // Refresh booking data
       await fetchBookingDetails(booking.id);
       setShowCompleteDialog(false);
-    } catch (error) {
-      console.error("Error completing booking:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to mark booking as complete",
@@ -291,106 +320,26 @@ export default function AdminBookingDetailPage() {
     }
   }
 
-
-  // Parse JSON strings for custom tour display
-  const parseCustomTourData = (data: string | undefined) => {
-    if (!data) return null;
-    
-    try {
-      // Try parsing as JSON
-      const parsed = typeof data === 'string' ? JSON.parse(data) : data;
-      return parsed;
-    } catch {
-      // If not JSON, return as string
-      return data;
-    }
+  // Quick action handlers
+  const handleEmailCustomer = () => {
+    if (!booking) return;
+    const subject = encodeURIComponent(
+      `Regarding your ${booking.bookingType} booking #${booking.id.slice(0, 8)}`
+    );
+    window.location.href = `mailto:${booking.userEmail}?subject=${subject}`;
   };
 
-  const renderCustomTourInfo = () => {
-    if (booking?.bookingType !== "custom-tour") return null;
+  const handlePrint = () => {
+    window.print();
+  };
 
-    const customizations = parseCustomTourData(booking.customizations);
-    const itineraryDetails = parseCustomTourData(booking.itineraryDetails);
-
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Custom Tour Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {customizations && (
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground mb-2">Customizations</p>
-              {typeof customizations === 'object' ? (
-                <div className="space-y-2">
-                  {Object.entries(customizations).map(([key, value]) => (
-                    <div key={key} className="flex gap-2">
-                      <span className="font-medium capitalize min-w-[120px]">
-                        {key.replace(/([A-Z])/g, ' $1').trim()}:
-                      </span>
-                      <span className="text-muted-foreground">
-                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm">{String(customizations)}</p>
-              )}
-            </div>
-          )}
-
-          {itineraryDetails && (
-            <div>
-              <p className="text-sm font-semibold text-muted-foreground mb-2">Itinerary Details</p>
-              {typeof itineraryDetails === 'object' ? (
-                <div className="space-y-3">
-                  {itineraryDetails.landmarks && Array.isArray(itineraryDetails.landmarks) && (
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Landmarks:</p>
-                      <ul className="list-disc list-inside space-y-1 text-sm">
-                        {itineraryDetails.landmarks.map((landmark: any, idx: number) => (
-                          <li key={idx}>
-                            {landmark.name || landmark}
-                            {landmark.duration && ` (${landmark.duration} min)`}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {itineraryDetails.totalTime && (
-                    <div className="text-sm">
-                      <span className="font-medium">Total Time: </span>
-                      <span>{itineraryDetails.totalTime} minutes</span>
-                    </div>
-                  )}
-                  {itineraryDetails.totalPrice && (
-                    <div className="text-sm">
-                      <span className="font-medium">Total Price: </span>
-                      <span>₱{itineraryDetails.totalPrice.toLocaleString()}</span>
-                    </div>
-                  )}
-                  {typeof itineraryDetails === 'object' && !itineraryDetails.landmarks && (
-                    <div className="text-sm space-y-1">
-                      {Object.entries(itineraryDetails).map(([key, value]) => (
-                        <div key={key} className="flex gap-2">
-                          <span className="font-medium capitalize">
-                            {key.replace(/([A-Z])/g, ' $1').trim()}:
-                          </span>
-                          <span>{String(value)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm">{String(itineraryDetails)}</p>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -400,189 +349,282 @@ export default function AdminBookingDetailPage() {
       </Head>
 
       <AdminLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 print:space-y-4">
           {/* Header */}
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/admin/bookings")}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold tracking-tight">Booking Details</h1>
-              {booking && (
-                <p className="text-muted-foreground mt-1">
-                  ID: {booking.id}
-                </p>
-              )}
-            </div>
-            {booking && (
-              <div className="flex gap-2">
-                {booking.status === "pending" && (
-                  <>
-                    <Button
-                      onClick={() => setShowConfirmDialog(true)}
-                      disabled={actionLoading}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Confirm
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => setShowCancelDialog(true)}
-                      disabled={actionLoading}
-                    >
-                      <XCircle className="h-4 w-4 mr-2" />
-                      Cancel
-                    </Button>
-                  </>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between print:hidden">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => router.push("/admin/bookings")}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">
+                  Booking Details
+                </h1>
+                {booking && (
+                  <p className="text-sm text-muted-foreground">
+                    #{booking.id.slice(0, 8)} • Created{" "}
+                    {format(booking.createdAt, "MMM d, yyyy")}
+                  </p>
                 )}
-                {booking.status === "confirmed" && (
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            {booking && (
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEmailCustomer}
+                  className="gap-1"
+                >
+                  <Mail className="h-4 w-4" />
+                  Email
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrint}
+                  className="gap-1"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print
+                </Button>
+                {booking.bookingType === "tour" && tour && (
                   <Button
-                    onClick={() => setShowCompleteDialog(true)}
-                    disabled={actionLoading}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/tours/${tour.id}`)}
+                    className="gap-1"
                   >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Mark as Complete
+                    <ExternalLink className="h-4 w-4" />
+                    View Tour
+                  </Button>
+                )}
+                {booking.bookingType === "vehicle" && vehicle && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/car-rentals`)}
+                    className="gap-1"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Rentals
                   </Button>
                 )}
               </div>
             )}
           </div>
 
+          {/* Status Action Buttons */}
+          {booking && (
+            <div className="flex gap-2 print:hidden">
+              {booking.status === "pending" && (
+                <>
+                  <Button
+                    onClick={() => setShowConfirmDialog(true)}
+                    disabled={actionLoading}
+                    className="gap-1"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Confirm Booking
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowCancelDialog(true)}
+                    disabled={actionLoading}
+                    className="gap-1"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Cancel Booking
+                  </Button>
+                </>
+              )}
+              {booking.status === "confirmed" && (
+                <Button
+                  onClick={() => setShowCompleteDialog(true)}
+                  disabled={actionLoading}
+                  className="bg-blue-600 hover:bg-blue-700 gap-1"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  Mark as Complete
+                </Button>
+              )}
+            </div>
+          )}
+
           {loading ? (
             <div className="space-y-4">
-              <Skeleton className="h-48 w-full" />
-              <Skeleton className="h-48 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <div className="grid gap-6 md:grid-cols-2">
+                <Skeleton className="h-48" />
+                <Skeleton className="h-48" />
+              </div>
+              <Skeleton className="h-64 w-full" />
             </div>
           ) : !booking ? (
             <Card>
               <CardContent className="pt-6">
-                <p className="text-center text-muted-foreground">Booking not found</p>
+                <p className="text-center text-muted-foreground">
+                  Booking not found
+                </p>
               </CardContent>
             </Card>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Customer Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Customer Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Name</p>
-                    <p className="font-medium">{booking.userName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      {booking.userEmail}
-                    </p>
-                  </div>
-                  {booking.contactPhone && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Phone</p>
-                      <p className="font-medium flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        {booking.phoneCountryCode} {booking.contactPhone}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            <div className="space-y-6">
+              {/* Status Timeline */}
+              <BookingStatusTimeline
+                status={booking.status}
+                createdAt={booking.createdAt}
+              />
 
-              {/* Booking Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Booking Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <div className="mt-1"><BookingStatusBadge status={booking.status} /></div>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Type</p>
-                    <p className="font-medium capitalize flex items-center gap-2">
-                      {booking.bookingType === "vehicle" ? (
-                        <Car className="h-4 w-4" />
-                      ) : (
-                        <MapPin className="h-4 w-4" />
+              {/* Main Content Grid */}
+              <div className="grid gap-6 lg:grid-cols-3">
+                {/* Left Column - Customer & Booking Info */}
+                <div className="space-y-6 lg:col-span-1">
+                  {/* Customer Card */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        <User className="h-5 w-5" />
+                        Customer
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                            {getInitials(booking.userName)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{booking.userName}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {booking.guests || booking.groupSize || 1}{" "}
+                            {(booking.guests || booking.groupSize || 1) === 1
+                              ? "guest"
+                              : "guests"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-4 w-4 text-muted-foreground" />
+                          <span>{booking.userEmail}</span>
+                        </div>
+                        {booking.contactPhone && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            <span>{booking.phoneCountryCode} {booking.contactPhone}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Guest Booking Info */}
+                      {booking.guestName && booking.guestName !== booking.userName && (
+                        <>
+                          <Separator />
+                          <div className="p-3 bg-muted/50 rounded-lg">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">
+                              Booked for Guest
+                            </p>
+                            <p className="font-medium text-sm">{booking.guestName}</p>
+                            {booking.guestEmail && (
+                              <p className="text-sm text-muted-foreground">
+                                {booking.guestEmail}
+                              </p>
+                            )}
+                          </div>
+                        </>
                       )}
-                      {booking.bookingType}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Dates</p>
-                    <p className="font-medium">
-                      {format(booking.startDate, "MMM d, yyyy")} - {format(booking.endDate, "MMM d, yyyy")}
-                    </p>
-                  </div>
-                  {booking.guests && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Guests</p>
-                      <p className="font-medium">{booking.guests} guests</p>
-                    </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Price Breakdown */}
+                  <BookingPriceBreakdown
+                    bookingType={booking.bookingType}
+                    totalPrice={booking.totalPrice}
+                    guests={booking.guests}
+                    groupSize={booking.groupSize}
+                    startDate={booking.startDate}
+                    endDate={booking.endDate}
+                    basePrice={
+                      tour?.price ||
+                      vehicle?.pricePerDay ||
+                      undefined
+                    }
+                  />
+
+                  {/* Special Requests */}
+                  {booking.specialRequests && (
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="flex items-center gap-2 text-lg">
+                          <MessageSquare className="h-5 w-5" />
+                          Special Requests
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                          {booking.specialRequests}
+                        </p>
+                      </CardContent>
+                    </Card>
                   )}
-                  <div>
-                    <p className="text-sm text-muted-foreground">Created</p>
-                    <p className="font-medium">{format(booking.createdAt, "MMM d, yyyy 'at' h:mm a")}</p>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
 
-              {/* Pricing */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Pricing
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total Amount</span>
-                      <span className="text-2xl font-bold">₱{booking.totalPrice.toLocaleString()}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                {/* Right Column - Tour/Vehicle Details */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Tour Booking Details */}
+                  {booking.bookingType === "tour" && tour && (
+                    <TourBookingDetails tour={tour} />
+                  )}
 
-              {/* Custom Tour Information */}
-              {renderCustomTourInfo()}
+                  {/* Vehicle Booking Details */}
+                  {booking.bookingType === "vehicle" && vehicle && (
+                    <VehicleBookingDetails
+                      vehicle={vehicle}
+                      rentalDays={rentalDays}
+                    />
+                  )}
 
-              {/* Additional Information */}
-              {booking.specialRequests && booking.bookingType !== "custom-tour" && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Additional Information</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Special Requests</p>
-                      <p className="mt-1">{booking.specialRequests}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-              
-              {booking.specialRequests && booking.bookingType === "custom-tour" && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Special Requests</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{booking.specialRequests}</p>
-                  </CardContent>
-                </Card>
-              )}
+                  {/* Custom Tour Details */}
+                  {booking.bookingType === "custom-tour" && (
+                    <CustomTourBookingDetails
+                      customizations={booking.customizations}
+                      itineraryDetails={booking.itineraryDetails}
+                    />
+                  )}
+
+                  {/* Fallback for tour/vehicle not found */}
+                  {booking.bookingType === "tour" && !tour && booking.tourId && (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <p className="text-center text-muted-foreground">
+                          Tour details not found (ID: {booking.tourId})
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {booking.bookingType === "vehicle" && !vehicle && booking.vehicleId && (
+                    <Card>
+                      <CardContent className="pt-6">
+                        <p className="text-center text-muted-foreground">
+                          Vehicle details not found (ID: {booking.vehicleId})
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -593,7 +635,8 @@ export default function AdminBookingDetailPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Confirm Booking</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to confirm this booking? The customer will be notified via email.
+                Are you sure you want to confirm this booking? The customer will
+                be notified via email.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -611,7 +654,8 @@ export default function AdminBookingDetailPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Cancel Booking</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to cancel this booking? This action cannot be undone.
+                Are you sure you want to cancel this booking? This action cannot
+                be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -633,7 +677,8 @@ export default function AdminBookingDetailPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>Mark Booking as Complete</AlertDialogTitle>
               <AlertDialogDescription>
-                Mark this booking as completed? This indicates the tour/service has been successfully delivered.
+                Mark this booking as completed? This indicates the tour/service
+                has been successfully delivered.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -652,5 +697,3 @@ export default function AdminBookingDetailPage() {
     </AdminProtectedRoute>
   );
 }
-
-

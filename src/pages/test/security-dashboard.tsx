@@ -1,16 +1,16 @@
 import Head from "next/head";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
-  RefreshCw, 
+import {
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  RefreshCw,
   Download,
   Shield,
   Lock,
@@ -76,7 +76,7 @@ export default function SecurityDashboard() {
           checks: [{
             name: 'Network Error',
             status: 'fail',
-            message: error.message
+            message: (error instanceof Error ? error.message : String(error))
           }],
           summary: 'Network error occurred'
         });
@@ -147,10 +147,10 @@ export default function SecurityDashboard() {
 
   const getOverallStatus = () => {
     if (testResults.length === 0) return 'unknown';
-    
+
     const hasFailures = testResults.some(result => result.status === 'fail');
     const hasWarnings = testResults.some(result => result.status === 'warning');
-    
+
     if (hasFailures) return 'fail';
     if (hasWarnings) return 'warning';
     return 'pass';
@@ -158,13 +158,13 @@ export default function SecurityDashboard() {
 
   const getOverallStats = () => {
     const totalChecks = testResults.reduce((sum, result) => sum + result.checks.length, 0);
-    const passedChecks = testResults.reduce((sum, result) => 
+    const passedChecks = testResults.reduce((sum, result) =>
       sum + result.checks.filter(check => check.status === 'pass').length, 0
     );
-    const failedChecks = testResults.reduce((sum, result) => 
+    const failedChecks = testResults.reduce((sum, result) =>
       sum + result.checks.filter(check => check.status === 'fail').length, 0
     );
-    const warningChecks = testResults.reduce((sum, result) => 
+    const warningChecks = testResults.reduce((sum, result) =>
       sum + result.checks.filter(check => check.status === 'warning').length, 0
     );
 
@@ -222,7 +222,7 @@ export default function SecurityDashboard() {
                       <div className="text-sm text-gray-600">Warnings</div>
                     </div>
                   </div>
-                  
+
                   {lastRun && (
                     <p className="text-sm text-gray-600">
                       Last run: {lastRun.toLocaleString()}
@@ -234,8 +234,8 @@ export default function SecurityDashboard() {
 
             {/* Action Buttons */}
             <div className="mb-8 flex flex-col sm:flex-row gap-4">
-              <Button 
-                onClick={runAllTests} 
+              <Button
+                onClick={runAllTests}
                 disabled={isRunning}
                 className="flex items-center"
                 size="lg"
@@ -247,9 +247,9 @@ export default function SecurityDashboard() {
                 )}
                 {isRunning ? 'Running Tests...' : 'Run All Tests'}
               </Button>
-              
+
               {testResults.length > 0 && (
-                <Button 
+                <Button
                   onClick={exportResults}
                   variant="outline"
                   className="flex items-center"
@@ -267,7 +267,7 @@ export default function SecurityDashboard() {
                 {testResults.map((result, index) => {
                   const testConfig = testEndpoints[index];
                   const IconComponent = testConfig.icon;
-                  
+
                   return (
                     <Card key={index}>
                       <CardHeader>
@@ -313,7 +313,7 @@ export default function SecurityDashboard() {
                         This dashboard tests your security configuration. Make sure your environment variables are properly configured before running tests.
                       </AlertDescription>
                     </Alert>
-                    
+
                     <div className="space-y-2">
                       <h4 className="font-semibold">Test Categories:</h4>
                       <ul className="list-disc list-inside space-y-1 text-sm text-gray-600">

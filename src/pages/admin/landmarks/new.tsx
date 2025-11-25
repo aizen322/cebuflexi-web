@@ -95,7 +95,7 @@ export default function AdminNewLandmarkPage() {
     const file = Array.from(e.dataTransfer.files).find(
       f => f.type.startsWith('image/')
     );
-    
+
     if (file) {
       processFile(file);
     }
@@ -115,10 +115,11 @@ export default function AdminNewLandmarkPage() {
     input.click();
   }
 
-  const onError = (errors: any) => {
+  const onError = (errors: unknown) => {
     console.error("Form validation errors:", errors);
-    const firstError = Object.keys(errors)[0];
-    const errorMessage = errors[firstError]?.message || "Please check all required fields";
+    const errorsObj = errors as Record<string, { message?: string }>;
+    const firstError = Object.keys(errorsObj)[0];
+    const errorMessage = errorsObj[firstError]?.message || "Please check all required fields";
     toast({
       title: "Validation Error",
       description: errorMessage,
@@ -140,7 +141,7 @@ export default function AdminNewLandmarkPage() {
     try {
       // Create temp ID for image upload
       const tempLandmarkId = `temp-${Date.now()}`;
-      
+
       // Upload image
       const imageUrl = await uploadLandmarkImage(
         imageFile,
@@ -164,7 +165,7 @@ export default function AdminNewLandmarkPage() {
         tourType: data.tourType,
       };
 
-      const landmarkId = await createLandmark(landmarkData);
+      await createLandmark(landmarkData);
 
       toast({
         title: "Success",
@@ -172,11 +173,11 @@ export default function AdminNewLandmarkPage() {
       });
 
       router.push("/admin/landmarks");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Error creating landmark:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create landmark",
+        description: (error as Error).message || "Failed to create landmark",
         variant: "destructive",
       });
     } finally {
@@ -250,7 +251,7 @@ export default function AdminNewLandmarkPage() {
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
                   <Select
-                    onValueChange={(value) => setValue("category", value as any)}
+                    onValueChange={(value: string) => setValue("category", value as "Historical" | "Religious" | "Cultural" | "Nature")}
                     value={watch("category")}
                   >
                     <SelectTrigger>
@@ -271,7 +272,7 @@ export default function AdminNewLandmarkPage() {
                 <div className="space-y-2">
                   <Label htmlFor="tourType">Tour Type *</Label>
                   <Select
-                    onValueChange={(value) => setValue("tourType", value as any)}
+                    onValueChange={(value: string) => setValue("tourType", value as "cebu-city" | "mountain")}
                     value={watch("tourType")}
                   >
                     <SelectTrigger>
@@ -370,11 +371,10 @@ export default function AdminNewLandmarkPage() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                  isDragging
-                    ? "border-primary bg-primary/5"
-                    : "border-muted-foreground/25 hover:border-primary/50"
-                }`}
+                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${isDragging
+                  ? "border-primary bg-primary/5"
+                  : "border-muted-foreground/25 hover:border-primary/50"
+                  }`}
               >
                 {imagePreview ? (
                   <div className="relative group aspect-video max-w-2xl mx-auto">

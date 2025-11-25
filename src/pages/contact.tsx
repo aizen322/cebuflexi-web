@@ -25,7 +25,6 @@ export default function ContactPage() {
     message: ""
   });
 
-  const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,7 +39,7 @@ export default function ContactPage() {
       // Validate form data
       const validation = validateForm(contactFormSchema, formData);
       
-      if (!validation.success) {
+      if (!validation.success || !validation.data) {
         toast({
           title: "Validation Error",
           description: "Please check your input and try again.",
@@ -50,12 +49,13 @@ export default function ContactPage() {
       }
 
       // Sanitize validated data
+      const validatedData = validation.data;
       const sanitizedData = {
-        name: sanitizeUserInput(validation.data.name, 'text'),
-        email: sanitizeUserInput(validation.data.email, 'email'),
-        phone: sanitizeUserInput(validation.data.phone || '', 'phone'),
-        subject: sanitizeUserInput(validation.data.subject, 'text'),
-        message: sanitizeUserInput(validation.data.message, 'text'),
+        name: sanitizeUserInput(validatedData.name, 'text'),
+        email: sanitizeUserInput(validatedData.email, 'email'),
+        phone: sanitizeUserInput(validatedData.phone || '', 'phone'),
+        subject: sanitizeUserInput(validatedData.subject, 'text'),
+        message: sanitizeUserInput(validatedData.message, 'text'),
       };
       
       await createContactSubmission(sanitizedData);
@@ -65,17 +65,14 @@ export default function ContactPage() {
         description: "Thank you for contacting us! We'll get back to you within 24 hours.",
       });
       
-      setSubmitted(true);
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
-    } catch (error) {
-      console.error("Contact form error:", error);
+    } catch {
       // Fallback: show success message even if database fails
       toast({
         title: "Message Sent!",
         description: "Thank you for contacting us! We'll get back to you within 24 hours.",
       });
       
-      setSubmitted(true);
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
     } finally {
       setIsSubmitting(false);

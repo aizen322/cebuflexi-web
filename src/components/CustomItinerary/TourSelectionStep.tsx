@@ -6,6 +6,7 @@ import { TourType, TourDuration } from "@/types";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { useLandmarksData } from "@/contexts/ContentDataContext";
+import { AppImage } from "@/components/ui/app-image";
 
 interface TourSelectionStepProps {
   step: "duration" | "tour-type";
@@ -207,9 +208,16 @@ export function TourSelectionStep({
                       
                       <div className="grid grid-cols-3 gap-2 mb-4">
                         {info.sampleImages.map((img, idx) => (
-                          <div key={idx} className="h-20 rounded-lg overflow-hidden">
-                            <img src={img} alt="" className="w-full h-full object-cover" />
-                          </div>
+                          <AppImage
+                            key={`${info.name}-${idx}`}
+                            src={img}
+                            alt={`${info.name} sample ${idx + 1}`}
+                            width={160}
+                            height={160}
+                            containerClassName="h-20 rounded-lg overflow-hidden"
+                            className="w-full h-full object-cover"
+                            sizes="(min-width: 768px) 33vw, 100vw"
+                          />
                         ))}
                       </div>
                       
@@ -253,9 +261,16 @@ export function TourSelectionStep({
                           <p className="text-xs text-gray-600 mb-2">{info.description}</p>
                           <div className="grid grid-cols-3 gap-1">
                             {info.sampleImages.map((img, idx) => (
-                              <div key={idx} className="h-16 rounded overflow-hidden">
-                                <img src={img} alt="" className="w-full h-full object-cover" />
-                              </div>
+                              <AppImage
+                                key={`${info.name}-day1-${idx}`}
+                                src={img}
+                                alt={`${info.name} example ${idx + 1}`}
+                                width={140}
+                                height={140}
+                                containerClassName="h-16 rounded overflow-hidden"
+                                className="w-full h-full object-cover"
+                                sizes="(min-width: 768px) 33vw, 100vw"
+                              />
                             ))}
                           </div>
                           {isSelected && (
@@ -295,9 +310,16 @@ export function TourSelectionStep({
                           <p className="text-xs text-gray-600 mb-2">{info.description}</p>
                           <div className="grid grid-cols-3 gap-1">
                             {info.sampleImages.map((img, idx) => (
-                              <div key={idx} className="h-16 rounded overflow-hidden">
-                                <img src={img} alt="" className="w-full h-full object-cover" />
-                              </div>
+                              <AppImage
+                                key={`${info.name}-day2-${idx}`}
+                                src={img}
+                                alt={`${info.name} highlight ${idx + 1}`}
+                                width={140}
+                                height={140}
+                                containerClassName="h-16 rounded overflow-hidden"
+                                className="w-full h-full object-cover"
+                                sizes="(min-width: 768px) 33vw, 100vw"
+                              />
                             ))}
                           </div>
                           {isSelected && (

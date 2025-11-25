@@ -4,16 +4,14 @@ import { useRouter } from "next/router";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { 
-  Calendar, 
-  Users, 
-  MapPin, 
-  Phone, 
-  Mail, 
+import {
+  Calendar,
+  Users,
+  Phone,
+  Mail,
   Clock,
   Car,
   Map as MapIcon,
@@ -29,6 +27,15 @@ import { ProtectedRoute } from "@/components/Auth/ProtectedRoute";
 import { parseItineraryDetails, isCustomTour, getFirstLandmarkImage, getItinerarySummary, getLandmarkNames } from "@/lib/customTourHelpers";
 import { usePaginatedBookings } from "@/hooks/usePaginatedBookings";
 import { useToursData, useVehiclesData } from "@/contexts/ContentDataContext";
+import { ItineraryDetails, MultiDayItineraryDetails } from "@/types";
+
+interface DisplayItem {
+  id: string;
+  title: string;
+  image: string;
+  summary?: string;
+  landmarkNames?: string;
+}
 
 export default function UserBookingsPage() {
   const router = useRouter();
@@ -36,7 +43,7 @@ export default function UserBookingsPage() {
   const { toast } = useToast();
   const { data: tours } = useToursData();
   const { data: vehicles } = useVehiclesData();
-  
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const filters = useMemo(
@@ -64,8 +71,7 @@ export default function UserBookingsPage() {
         description: "Your booking has been cancelled successfully.",
       });
       refresh(); // Refresh the bookings list
-    } catch (error) {
-      console.error("Error cancelling booking:", error);
+    } catch {
       toast({
         title: "Error",
         description: "Failed to cancel booking. Please try again.",
@@ -83,7 +89,7 @@ export default function UserBookingsPage() {
     [vehicles]
   );
 
-  const getBookingItem = (booking: Booking) => {
+  const getBookingItem = (booking: Booking): DisplayItem | null => {
     if (isCustomTour(booking)) {
       return {
         id: "custom-tour",
@@ -93,9 +99,21 @@ export default function UserBookingsPage() {
         landmarkNames: getLandmarkNames(booking)
       };
     } else if (booking.bookingType === "tour" && booking.tourId) {
-      return tourMap.get(booking.tourId) ?? null;
+      const tour = tourMap.get(booking.tourId);
+      if (!tour) return null;
+      return {
+        id: tour.id,
+        title: tour.title,
+        image: tour.images[0],
+      };
     } else if (booking.bookingType === "vehicle" && booking.vehicleId) {
-      return vehicleMap.get(booking.vehicleId) ?? null;
+      const vehicle = vehicleMap.get(booking.vehicleId);
+      if (!vehicle) return null;
+      return {
+        id: vehicle.id,
+        title: vehicle.name,
+        image: vehicle.image,
+      };
     }
     return null;
   };
@@ -176,7 +194,7 @@ export default function UserBookingsPage() {
                   <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold mb-2">No Bookings Found</h3>
                   <p className="text-gray-600 mb-6">
-                    {statusFilter === "all" 
+                    {statusFilter === "all"
                       ? "You haven't made any bookings yet. Start exploring our tours and car rentals!"
                       : `No ${statusFilter} bookings found.`
                     }
@@ -190,346 +208,363 @@ export default function UserBookingsPage() {
               <>
                 <div className="space-y-6">
                   {bookings.map((booking) => {
-                  const item = getBookingItem(booking);
-                  if (!item) return null;
+                    const item = getBookingItem(booking);
+                    if (!item) return null;
 
-                  return (
-                    <Card key={booking.id} className="overflow-hidden">
-                      <CardContent className="p-6">
-                        <div className="flex flex-col lg:flex-row gap-6">
-                          <div className="lg:w-1/4">
-                            <div className="relative h-48 lg:h-32 rounded-lg overflow-hidden">
-                              <img
-                                src={isCustomTour(booking) ? (item as any).image : 
-                                     booking.bookingType === "tour" ? (item as any).images?.[0] : (item as any).image}
-                                alt={isCustomTour(booking) ? "Custom DIY Tour" : 
-                                     booking.bookingType === "tour" ? (item as any).title : (item as any).name}
-                                className="w-full h-full object-cover"
-                              />
-                              <Badge className={`absolute top-2 left-2 ${getStatusBadgeColor(booking.status)}`}>
-                                {booking.status}
-                              </Badge>
-                              {isCustomTour(booking) && (
-                                <Badge className="absolute top-2 right-2 bg-blue-600">
-                                  Custom Tour
+                    return (
+                      <Card key={booking.id} className="overflow-hidden">
+                        <CardContent className="p-6">
+                          <div className="flex flex-col lg:flex-row gap-6">
+                            <div className="lg:w-1/4">
+                              <div className="relative h-48 lg:h-32 rounded-lg overflow-hidden">
+                                <img
+                                  src={item.image}
+                                  alt={item.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <Badge className={`absolute top-2 left-2 ${getStatusBadgeColor(booking.status)}`}>
+                                  {booking.status}
                                 </Badge>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="lg:w-3/4 flex flex-col justify-between">
-                            <div>
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
-                                <h3 className="text-xl font-bold">
-                                  {isCustomTour(booking) ? "Custom DIY Tour" : 
-                                   booking.bookingType === "tour" ? (item as any).title : (item as any).name}
-                                </h3>
-                                <div className="text-2xl font-bold text-blue-600">
-                                  ₱{booking.totalPrice.toLocaleString()}
-                                </div>
+                                {isCustomTour(booking) && (
+                                  <Badge className="absolute top-2 right-2 bg-blue-600">
+                                    Custom Tour
+                                  </Badge>
+                                )}
                               </div>
+                            </div>
 
-                              {/* Custom Tour Summary */}
-                              {isCustomTour(booking) && (
-                                <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-                                  <p className="text-sm font-semibold text-blue-800 mb-1">
-                                    {(item as any).summary}
-                                  </p>
-                                  <p className="text-xs text-blue-700">
-                                    {(item as any).landmarkNames}
-                                  </p>
-                                </div>
-                              )}
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                <div className="flex items-center text-sm text-gray-600">
-                                  <Calendar className="h-4 w-4 mr-2" />
-                                  <span>
-                                    {formatDate(booking.startDate)}
-                                    {booking.endDate && booking.endDate.getTime() !== booking.startDate.getTime() && 
-                                      ` - ${formatDate(booking.endDate)}`
-                                    }
-                                  </span>
+                            <div className="lg:w-3/4 flex flex-col justify-between">
+                              <div>
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                                  <h3 className="text-xl font-bold">
+                                    {item.title}
+                                  </h3>
+                                  <div className="text-2xl font-bold text-blue-600">
+                                    ₱{booking.totalPrice.toLocaleString()}
+                                  </div>
                                 </div>
 
-                                {booking.groupSize && (
-                                  <div className="flex items-center text-sm text-gray-600">
-                                    <Users className="h-4 w-4 mr-2" />
-                                    <span>{booking.groupSize} {booking.groupSize === 1 ? 'person' : 'people'}</span>
+                                {/* Custom Tour Summary */}
+                                {isCustomTour(booking) && item.summary && (
+                                  <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+                                    <p className="text-sm font-semibold text-blue-800 mb-1">
+                                      {item.summary}
+                                    </p>
+                                    <p className="text-xs text-blue-700">
+                                      {item.landmarkNames}
+                                    </p>
                                   </div>
                                 )}
 
-                                <div className="flex items-center text-sm text-gray-600">
-                                  {isCustomTour(booking) ? <MapIcon className="h-4 w-4 mr-2" /> :
-                                   booking.bookingType === "tour" ? <MapIcon className="h-4 w-4 mr-2" /> : <Car className="h-4 w-4 mr-2" />}
-                                  <span>{isCustomTour(booking) ? "Custom Tour" : 
-                                         booking.bookingType === "tour" ? "Tour" : "Vehicle Rental"}</span>
-                                </div>
-
-                                <div className="flex items-center text-sm text-gray-600">
-                                  <Clock className="h-4 w-4 mr-2" />
-                                  <span>Booked on {formatDate(booking.createdAt)}</span>
-                                </div>
-                              </div>
-
-                              {/* Add duration for custom tours */}
-                              {isCustomTour(booking) && (() => {
-                                const itineraryDetails = parseItineraryDetails(booking);
-                                if (!itineraryDetails) return null;
-                                
-                                const days = (itineraryDetails as any).days
-                                  ? (itineraryDetails as any).duration === "2-days" ? 2 : 1
-                                  : 1;
-                                
-                                const totalHours = (itineraryDetails as any).days
-                                  ? Math.ceil((itineraryDetails as any).days.reduce((sum: number, d: any) => sum + d.totalTime, 0) / 60)
-                                  : Math.ceil((itineraryDetails as any).totalTime / 60);
-                                
-                                return (
-                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                    <div className="flex items-center text-sm text-gray-600">
-                                      <Clock className="h-4 w-4 mr-2" />
-                                      <span>Day(s): {days}</span>
-                                    </div>
-                                    <div className="flex items-center text-sm text-gray-600">
-                                      <Clock className="h-4 w-4 mr-2" />
-                                      <span>Duration: {totalHours}h total</span>
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                  <div className="flex items-center text-sm text-gray-600">
+                                    <Calendar className="h-4 w-4 mr-2" />
+                                    <span>
+                                      {formatDate(booking.startDate)}
+                                      {booking.endDate && booking.endDate.getTime() !== booking.startDate.getTime() &&
+                                        ` - ${formatDate(booking.endDate)}`
+                                      }
+                                    </span>
                                   </div>
-                                );
-                              })()}
 
-                              {booking.specialRequests && (
-                                <div className="mb-4">
-                                  <h4 className="font-semibold text-sm mb-1">Special Requests:</h4>
-                                  <p className="text-sm text-gray-600">{booking.specialRequests}</p>
+                                  {booking.groupSize && (
+                                    <div className="flex items-center text-sm text-gray-600">
+                                      <Users className="h-4 w-4 mr-2" />
+                                      <span>{booking.groupSize} {booking.groupSize === 1 ? 'person' : 'people'}</span>
+                                    </div>
+                                  )}
+
+                                  <div className="flex items-center text-sm text-gray-600">
+                                    {isCustomTour(booking) ? <MapIcon className="h-4 w-4 mr-2" /> :
+                                      booking.bookingType === "tour" ? <MapIcon className="h-4 w-4 mr-2" /> : <Car className="h-4 w-4 mr-2" />}
+                                    <span>{isCustomTour(booking) ? "Custom Tour" :
+                                      booking.bookingType === "tour" ? "Tour" : "Vehicle Rental"}</span>
+                                  </div>
+
+                                  <div className="flex items-center text-sm text-gray-600">
+                                    <Clock className="h-4 w-4 mr-2" />
+                                    <span>Booked on {formatDate(booking.createdAt)}</span>
+                                  </div>
                                 </div>
-                              )}
 
-                              {/* Custom Tour Itinerary Details */}
-                              {isCustomTour(booking) && (
-                                <div className="mb-4">
-                                  <h4 className="font-semibold text-sm mb-2">Itinerary Details:</h4>
-                                  {(() => {
-                                    const details: any = parseItineraryDetails(booking);
-                                    if (!details) return null;
+                                {/* Add duration for custom tours */}
+                                {isCustomTour(booking) && (() => {
+                                  const itineraryDetails = parseItineraryDetails(booking);
+                                  if (!itineraryDetails) return null;
 
-                                    const isMultiDay = Array.isArray(details?.days);
+                                  if ('days' in itineraryDetails) {
+                                    // Multi-day
+                                    const md = itineraryDetails as MultiDayItineraryDetails;
+                                    const days = md.duration === "2-days" ? 2 : 1;
+                                    const totalHours = Math.ceil(md.days.reduce((sum, d) => sum + d.totalTime, 0) / 60);
 
-                                    if (isMultiDay) {
-                                      const days = details.days as Array<any>;
-                                      const totalHours = Math.ceil((days || []).reduce((sum, d) => sum + (d?.totalTime || 0), 0) / 60);
-                                      return (
-                                        <div className="space-y-4">
-                                          <div className="text-sm text-gray-600">
-                                            <strong>Tour Duration:</strong> 2 Days • {totalHours} hours
-                                          </div>
-                                          {(days || []).map((dayPlan, idx) => (
-                                            <div key={idx} className="p-3 bg-gray-50 rounded-lg">
-                                              <h5 className="font-semibold text-sm mb-2">
-                                                Day {dayPlan?.day}: {dayPlan?.tourType === "cebu-city" ? "Cebu City Tour" : "Mountain Tour"}
-                                              </h5>
-                                              <div className="text-sm text-gray-600 mb-2">
-                                                <strong>Duration:</strong> {Math.ceil((dayPlan?.totalTime || 0) / 60)} hours
-                                              </div>
-                                              <div>
-                                                <strong className="text-sm">Landmarks:</strong>
-                                                <div className="mt-1 space-y-1">
-                                                  {((dayPlan?.landmarks as Array<any>) || [])
-                                                    .slice()
-                                                    .sort((a, b) => (a?.order || 0) - (b?.order || 0))
-                                                    .map((landmark: any) => (
-                                                      <div key={landmark.id} className="text-xs text-gray-600 flex items-center gap-2">
-                                                        <Badge variant="outline" className="w-5 h-5 rounded-full flex items-center justify-center p-0 text-xs">
-                                                          {landmark.order}
-                                                        </Badge>
-                                                        {landmark.name} (~{landmark.duration}min)
-                                                      </div>
-                                                    ))}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      );
-                                    }
-
-                                    // Single-day fallback
-                                    const single = details;
-                                    const singleHours = Math.ceil((single?.totalTime || 0) / 60);
                                     return (
-                                      <div className="space-y-2">
-                                        <div className="text-sm text-gray-600">
-                                          <strong>Package:</strong> {single?.isFullPackage ? "Full Package Deal" : "Hourly Rate"}
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div className="flex items-center text-sm text-gray-600">
+                                          <Clock className="h-4 w-4 mr-2" />
+                                          <span>Day(s): {days}</span>
                                         </div>
-                                        <div className="text-sm text-gray-600">
-                                          <strong>Duration:</strong> {singleHours} hours
-                                        </div>
-                                        {typeof single?.totalPrice === 'number' && (
-                                          <div className="text-sm text-gray-600">
-                                            <strong>Price per person:</strong> ₱{single.totalPrice.toLocaleString()}
-                                          </div>
-                                        )}
-                                        <div className="mt-2">
-                                          <strong className="text-sm">Landmarks:</strong>
-                                          <div className="mt-1 space-y-1">
-                                            {((single?.landmarks as Array<any>) || [])
-                                              .slice()
-                                              .sort((a, b) => (a?.order || 0) - (b?.order || 0))
-                                              .map((landmark: any) => (
-                                                <div key={landmark.id} className="text-xs text-gray-600 flex items-center gap-2">
-                                                  <Badge variant="outline" className="w-5 h-5 rounded-full flex items-center justify-center p-0 text-xs">
-                                                    {landmark.order}
-                                                  </Badge>
-                                                  {landmark.name} (~{landmark.duration}min)
-                                                </div>
-                                              ))}
-                                          </div>
+                                        <div className="flex items-center text-sm text-gray-600">
+                                          <Clock className="h-4 w-4 mr-2" />
+                                          <span>Duration: {totalHours}h total</span>
                                         </div>
                                       </div>
                                     );
-                                  })()}
-                                </div>
-                              )}
+                                  } else {
+                                    // Single-day
+                                    const sd = itineraryDetails as ItineraryDetails;
+                                    const totalHours = Math.ceil(sd.totalTime / 60);
 
-                              {(booking.guestName || booking.guestEmail || booking.guestPhone) && (
-                                <div className="mb-4">
-                                  <h4 className="font-semibold text-sm mb-1">Guest Information:</h4>
-                                  <div className="text-sm text-gray-600 space-y-1">
-                                    {booking.guestName && (
-                                      <div className="flex items-center">
-                                        <User className="h-4 w-4 mr-2 text-blue-600" />
-                                        <span>Name: {booking.guestName}</span>
+                                    return (
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        <div className="flex items-center text-sm text-gray-600">
+                                          <Clock className="h-4 w-4 mr-2" />
+                                          <span>Day(s): 1</span>
+                                        </div>
+                                        <div className="flex items-center text-sm text-gray-600">
+                                          <Clock className="h-4 w-4 mr-2" />
+                                          <span>Duration: {totalHours}h total</span>
+                                        </div>
                                       </div>
-                                    )}
-                                    {booking.guestEmail && (
-                                      <div className="flex items-center">
-                                        <Mail className="h-4 w-4 mr-2 text-blue-600" />
-                                        <span>Email: {booking.guestEmail}</span>
-                                      </div>
-                                    )}
-                                    {booking.guestPhone && (
-                                      <div className="flex items-center">
-                                        <Phone className="h-4 w-4 mr-2 text-blue-600" />
-                                        <span>Phone: {booking.guestPhone}</span>
-                                      </div>
-                                    )}
+                                    );
+                                  }
+                                })()}
+
+                                {booking.specialRequests && (
+                                  <div className="mb-4">
+                                    <h4 className="font-semibold text-sm mb-1">Special Requests:</h4>
+                                    <p className="text-sm text-gray-600">{booking.specialRequests}</p>
                                   </div>
-                                </div>
-                              )}
+                                )}
 
-                              {booking.customizations && booking.bookingType === "vehicle" && (
-                                <div className="mb-4">
-                                  <h4 className="font-semibold text-sm mb-1">Rental Details:</h4>
-                                  <div className="text-sm text-gray-600">
+                                {/* Custom Tour Itinerary Details */}
+                                {isCustomTour(booking) && (
+                                  <div className="mb-4">
+                                    <h4 className="font-semibold text-sm mb-2">Itinerary Details:</h4>
                                     {(() => {
-                                      try {
-                                        const customizations = JSON.parse(booking.customizations);
-                                        const rentalDays = customizations.rentalDays || 1;
-                                        const addOns = customizations.addOns || {};
-                                        
+                                      const details = parseItineraryDetails(booking);
+                                      if (!details) return null;
+
+                                      if ('days' in details) {
+                                        // Multi-day
+                                        const md = details as MultiDayItineraryDetails;
+                                        const totalHours = Math.ceil((md.days || []).reduce((sum, d) => sum + (d?.totalTime || 0), 0) / 60);
                                         return (
-                                          <div className="space-y-2">
-                                            {customizations.pickupLocation && (
-                                              <div>Pickup: {customizations.pickupLocation}</div>
-                                            )}
-                                            {customizations.dropoffLocation && (
-                                              <div>Drop-off: {customizations.dropoffLocation}</div>
-                                            )}
-                                            {customizations.rentalDays && (
-                                              <div>Duration: {customizations.rentalDays} days</div>
-                                            )}
-                                            
-                                            {(addOns.insurance || addOns.gps || addOns.childSeat) && (
-                                              <div className="mt-3 pt-2 border-t border-gray-200">
-                                                <h5 className="font-medium text-sm mb-1">Add-ons:</h5>
-                                                <div className="space-y-1">
-                                                  {addOns.insurance && (
-                                                    <div className="flex justify-between">
-                                                      <span>Insurance:</span>
-                                                      <span>₱{(500 * rentalDays).toLocaleString()}</span>
-                                                    </div>
-                                                  )}
-                                                  {addOns.gps && (
-                                                    <div className="flex justify-between">
-                                                      <span>GPS Navigation:</span>
-                                                      <span>₱{(200 * rentalDays).toLocaleString()}</span>
-                                                    </div>
-                                                  )}
-                                                  {addOns.childSeat && (
-                                                    <div className="flex justify-between">
-                                                      <span>Child Safety Seat:</span>
-                                                      <span>₱{(150 * rentalDays).toLocaleString()}</span>
-                                                    </div>
-                                                  )}
+                                          <div className="space-y-4">
+                                            <div className="text-sm text-gray-600">
+                                              <strong>Tour Duration:</strong> 2 Days • {totalHours} hours
+                                            </div>
+                                            {(md.days || []).map((dayPlan, idx) => (
+                                              <div key={idx} className="p-3 bg-gray-50 rounded-lg">
+                                                <h5 className="font-semibold text-sm mb-2">
+                                                  Day {dayPlan?.day}: {dayPlan?.tourType === "cebu-city" ? "Cebu City Tour" : "Mountain Tour"}
+                                                </h5>
+                                                <div className="text-sm text-gray-600 mb-2">
+                                                  <strong>Duration:</strong> {Math.ceil((dayPlan?.totalTime || 0) / 60)} hours
+                                                </div>
+                                                <div>
+                                                  <strong className="text-sm">Landmarks:</strong>
+                                                  <div className="mt-1 space-y-1">
+                                                    {((dayPlan?.landmarks) || [])
+                                                      .slice()
+                                                      .sort((a, b) => (a?.order || 0) - (b?.order || 0))
+                                                      .map((landmark: { id: string; name: string; order?: number; duration?: number;[key: string]: unknown }) => (
+                                                        <div key={landmark.id} className="text-xs text-gray-600 flex items-center gap-2">
+                                                          <Badge variant="outline" className="w-5 h-5 rounded-full flex items-center justify-center p-0 text-xs">
+                                                            {landmark.order || 0}
+                                                          </Badge>
+                                                          {landmark.name} (~{landmark.duration || 0}min)
+                                                        </div>
+                                                      ))}
+                                                  </div>
                                                 </div>
                                               </div>
-                                            )}
+                                            ))}
                                           </div>
                                         );
-                                      } catch (error) {
-                                        return <div>{booking.customizations}</div>;
+                                      } else {
+                                        // Single-day
+                                        const single = details as ItineraryDetails;
+                                        const singleHours = Math.ceil((single?.totalTime || 0) / 60);
+                                        return (
+                                          <div className="space-y-2">
+                                            <div className="text-sm text-gray-600">
+                                              <strong>Package:</strong> {single?.isFullPackage ? "Full Package Deal" : "Hourly Rate"}
+                                            </div>
+                                            <div className="text-sm text-gray-600">
+                                              <strong>Duration:</strong> {singleHours} hours
+                                            </div>
+                                            {typeof single?.totalPrice === 'number' && (
+                                              <div className="text-sm text-gray-600">
+                                                <strong>Price per person:</strong> ₱{single.totalPrice.toLocaleString()}
+                                              </div>
+                                            )}
+                                            <div className="mt-2">
+                                              <strong className="text-sm">Landmarks:</strong>
+                                              <div className="mt-1 space-y-1">
+                                                {((single?.landmarks) || [])
+                                                  .slice()
+                                                  .sort((a, b) => (a?.order || 0) - (b?.order || 0))
+                                                  .map((landmark: { id: string; name: string; order?: number; duration?: number;[key: string]: unknown }) => (
+                                                    <div key={landmark.id} className="text-xs text-gray-600 flex items-center gap-2">
+                                                      <Badge variant="outline" className="w-5 h-5 rounded-full flex items-center justify-center p-0 text-xs">
+                                                        {landmark.order || 0}
+                                                      </Badge>
+                                                      {landmark.name} (~{landmark.duration || 0}min)
+                                                    </div>
+                                                  ))}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
                                       }
                                     })()}
                                   </div>
-                                </div>
-                              )}
-                            </div>
+                                )}
 
-                            <div className="flex flex-col sm:flex-row gap-3 mt-4">
-                              <div className="flex items-center space-x-4 text-sm text-gray-600">
-                                <div className="flex items-center">
-                                  <Mail className="h-4 w-4 mr-1" />
-                                  {booking.userEmail}
-                                </div>
-                                {booking.contactPhone && (
-                                  <div className="flex items-center">
-                                    <Phone className="h-4 w-4 mr-1" />
-                                    {booking.contactPhone}
+                                {(booking.guestName || booking.guestEmail || booking.guestPhone) && (
+                                  <div className="mb-4">
+                                    <h4 className="font-semibold text-sm mb-1">Guest Information:</h4>
+                                    <div className="text-sm text-gray-600 space-y-1">
+                                      {booking.guestName && (
+                                        <div className="flex items-center">
+                                          <User className="h-4 w-4 mr-2 text-blue-600" />
+                                          <span>Name: {booking.guestName}</span>
+                                        </div>
+                                      )}
+                                      {booking.guestEmail && (
+                                        <div className="flex items-center">
+                                          <Mail className="h-4 w-4 mr-2 text-blue-600" />
+                                          <span>Email: {booking.guestEmail}</span>
+                                        </div>
+                                      )}
+                                      {booking.guestPhone && (
+                                        <div className="flex items-center">
+                                          <Phone className="h-4 w-4 mr-2 text-blue-600" />
+                                          <span>Phone: {booking.guestPhone}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {booking.customizations && booking.bookingType === "vehicle" && (
+                                  <div className="mb-4">
+                                    <h4 className="font-semibold text-sm mb-1">Rental Details:</h4>
+                                    <div className="text-sm text-gray-600">
+                                      {(() => {
+                                        try {
+                                          const customizations = JSON.parse(booking.customizations);
+                                          const rentalDays = customizations.rentalDays || 1;
+                                          const addOns = customizations.addOns || {};
+
+                                          return (
+                                            <div className="space-y-2">
+                                              {customizations.pickupLocation && (
+                                                <div>Pickup: {customizations.pickupLocation}</div>
+                                              )}
+                                              {customizations.dropoffLocation && (
+                                                <div>Drop-off: {customizations.dropoffLocation}</div>
+                                              )}
+                                              {customizations.rentalDays && (
+                                                <div>Duration: {customizations.rentalDays} days</div>
+                                              )}
+
+                                              {(addOns.insurance || addOns.gps || addOns.childSeat) && (
+                                                <div className="mt-3 pt-2 border-t border-gray-200">
+                                                  <h5 className="font-medium text-sm mb-1">Add-ons:</h5>
+                                                  <div className="space-y-1">
+                                                    {addOns.insurance && (
+                                                      <div className="flex justify-between">
+                                                        <span>Insurance:</span>
+                                                        <span>₱{(500 * rentalDays).toLocaleString()}</span>
+                                                      </div>
+                                                    )}
+                                                    {addOns.gps && (
+                                                      <div className="flex justify-between">
+                                                        <span>GPS Navigation:</span>
+                                                        <span>₱{(200 * rentalDays).toLocaleString()}</span>
+                                                      </div>
+                                                    )}
+                                                    {addOns.childSeat && (
+                                                      <div className="flex justify-between">
+                                                        <span>Child Safety Seat:</span>
+                                                        <span>₱{(150 * rentalDays).toLocaleString()}</span>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        } catch {
+                                          return <div>{booking.customizations}</div>;
+                                        }
+                                      })()}
+                                    </div>
                                   </div>
                                 )}
                               </div>
 
-                              {booking.status === "pending" && (
-                                <Button
-                                  variant="destructive"
-                                  size="sm"
-                                  onClick={() => handleCancelBooking(booking.id!)}
-                                  className="ml-auto"
-                                >
-                                  <X className="h-4 w-4 mr-2" />
-                                  Cancel Booking
-                                </Button>
-                              )}
+                              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                  <div className="flex items-center">
+                                    <Mail className="h-4 w-4 mr-1" />
+                                    {booking.userEmail}
+                                  </div>
+                                  {booking.contactPhone && (
+                                    <div className="flex items-center">
+                                      <Phone className="h-4 w-4 mr-1" />
+                                      {booking.contactPhone}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {booking.status === "pending" && (
+                                  <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    onClick={() => {
+                                      if (booking.id) {
+                                        handleCancelBooking(booking.id);
+                                      }
+                                    }}
+                                    className="ml-auto"
+                                    disabled={!booking.id}
+                                  >
+                                    <X className="h-4 w-4 mr-2" />
+                                    Cancel Booking
+                                  </Button>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-
-              {/* Load More Button */}
-              {hasMore && (
-                <div className="mt-6 text-center">
-                  <Button
-                    onClick={loadMore}
-                    variant="outline"
-                    disabled={loading}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      "Load More Bookings"
-                    )}
-                  </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
-              )}
-            </>
+
+                {/* Load More Button */}
+                {hasMore && (
+                  <div className="mt-6 text-center">
+                    <Button
+                      onClick={loadMore}
+                      variant="outline"
+                      disabled={loading}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        "Load More Bookings"
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>

@@ -34,7 +34,7 @@ if (typeof window !== "undefined") {
     try {
       connectFirestoreEmulator(db, "localhost", 8080);
     } catch (error) {
-      // Emulator already connected, ignore
+      console.warn("Firestore emulator connection skipped:", error);
     }
   }
 }

@@ -25,7 +25,7 @@ export default async function handler(
     const token = authHeader.substring(7);
     const verification = await verifyIdToken(token);
 
-    if (!verification.success) {
+    if (!verification.success || !verification.user) {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
@@ -70,11 +70,12 @@ export default async function handler(
       status,
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Update booking status error:', error);
+    const err = error as { message?: string };
     return res.status(500).json({
       error: 'Failed to update booking status',
-      details: error.message,
+      details: err.message || 'Unknown error',
     });
   }
 }

@@ -1,5 +1,6 @@
 
 import Head from "next/head";
+import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Header } from "@/components/Layout/Header";
@@ -107,10 +108,11 @@ export default function BlogPage() {
                   <Link key={post.id} href={`/blog/${post.slug}`}>
                     <Card className="h-full hover:shadow-xl transition-shadow cursor-pointer overflow-hidden group">
                       <div className="relative h-48 overflow-hidden">
-                        <img
+                        <Image
                           src={post.image}
                           alt={post.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
                         <Badge className="absolute top-4 left-4 bg-blue-600">
                           {post.category}

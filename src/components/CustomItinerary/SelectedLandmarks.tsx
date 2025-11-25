@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GripVertical, X, Clock } from "lucide-react";
+import { AppImage } from "@/components/ui/app-image";
 import {
   DndContext,
   closestCenter,
@@ -74,13 +75,15 @@ function SortableLandmarkItem({ landmark, index, onRemove }: SortableLandmarkIte
           </div>
 
           {/* Landmark Image */}
-          <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
-            <img
-              src={landmark.image}
-              alt={landmark.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
+          <AppImage
+            src={landmark.image}
+            alt={landmark.name}
+            width={64}
+            height={64}
+            containerClassName="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden"
+            className="w-full h-full object-cover"
+            sizes="64px"
+          />
 
           {/* Landmark Info */}
           <div className="flex-grow min-w-0">

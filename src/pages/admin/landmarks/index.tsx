@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { COLLECTIONS } from "@/lib/firestore-collections";
 import { Landmark } from "@/types";
 import { Plus, Edit } from "lucide-react";
+import { AppImage } from "@/components/ui/app-image";
 
 export default function AdminLandmarksPage() {
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
@@ -67,23 +68,14 @@ export default function AdminLandmarksPage() {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {landmarks.map((landmark) => (
                     <Card key={landmark.id}>
-                      <div className="relative h-32 bg-gray-200">
-                        {landmark.image ? (
-                          <img
-                            src={landmark.image}
-                            alt={landmark.name}
-                            className="w-full h-full object-cover rounded-t-lg"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = 'none';
-                              (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400 text-xs"><span>No Image</span></div>';
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400 text-xs">
-                            <span>No Image</span>
-                          </div>
-                        )}
-                      </div>
+                      <AppImage
+                        src={landmark.image || "/images/placeholder.jpg"}
+                        alt={landmark.name}
+                        fill
+                        containerClassName="relative h-32 bg-gray-200 rounded-t-lg"
+                        className="object-cover"
+                        sizes="(min-width: 1024px) 33vw, 100vw"
+                      />
                       <CardContent className="p-4">
                         <h3 className="font-semibold">{landmark.name}</h3>
                         <p className="text-xs text-muted-foreground line-clamp-2 mt-1">

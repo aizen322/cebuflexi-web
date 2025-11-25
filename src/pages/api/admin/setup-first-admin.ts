@@ -40,6 +40,7 @@ export default async function handler(
     try {
       userRecord = await adminAuth.getUserByEmail(email);
     } catch (error) {
+      console.error('Failed to fetch user by email:', error);
       return res.status(404).json({ 
         error: 'User not found. Please create an account first, then run this setup.' 
       });
@@ -70,11 +71,12 @@ export default async function handler(
       uid: userRecord.uid
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Setup admin error:', error);
+    const details = error instanceof Error ? error.message : 'Unknown error';
     return res.status(500).json({ 
       error: 'Failed to setup admin',
-      details: error.message 
+      details
     });
   }
 }

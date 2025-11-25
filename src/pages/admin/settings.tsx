@@ -12,11 +12,12 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Save } from "lucide-react";
 import { COLLECTIONS } from "@/lib/firestore-collections";
+import type { SiteSettings } from "@/types";
 
 export default function AdminSettingsPage() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<SiteSettings>({
     siteName: "CebuFlexi Tours",
     contactEmail: "info@cebuflexitours.com",
     contactPhone: "+63 123 456 7890",
@@ -32,7 +33,7 @@ export default function AdminSettingsPage() {
     try {
       const settingsDoc = await getDoc(doc(db, COLLECTIONS.SITE_SETTINGS, "default"));
       if (settingsDoc.exists()) {
-        setSettings(settingsDoc.data() as any);
+        setSettings(settingsDoc.data() as SiteSettings);
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -52,6 +53,7 @@ export default function AdminSettingsPage() {
         description: "Settings saved successfully",
       });
     } catch (error) {
+      console.error("Error saving settings:", error);
       toast({
         title: "Error",
         description: "Failed to save settings",

@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Clock, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AppImage } from "@/components/ui/app-image";
 
 interface LandmarkSelectorProps {
   landmarks: Landmark[];
@@ -61,12 +62,14 @@ export function LandmarkSelector({
               }`}
               onClick={() => onToggleLandmark(landmark)}
             >
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={landmark.image}
-                  alt={landmark.name}
-                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
-                />
+              <AppImage
+                src={landmark.image}
+                alt={landmark.name}
+                fill
+                containerClassName="relative h-48 overflow-hidden"
+                className="object-cover transition-transform duration-300 hover:scale-110"
+                sizes="(min-width: 1024px) 33vw, 100vw"
+              >
                 <div className="absolute top-2 left-2">
                   <Badge className="bg-white text-gray-900">{landmark.category}</Badge>
                 </div>
@@ -80,13 +83,10 @@ export function LandmarkSelector({
                       onToggleLandmark(landmark);
                     }}
                   >
-                    <Checkbox
-                      checked={selected}
-                      className="pointer-events-none"
-                    />
+                    <Checkbox checked={selected} className="pointer-events-none" />
                   </div>
                 </div>
-              </div>
+              </AppImage>
               
               <CardContent className="p-4">
                 <h3 className="font-bold text-lg mb-2 line-clamp-2 min-h-[56px]">

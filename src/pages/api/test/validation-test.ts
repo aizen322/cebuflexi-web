@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextApiRequest, NextApiResponse } from 'next';
 import { withApiSecurity, withErrorHandler } from '@/lib/api-middleware';
 
@@ -20,15 +21,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 
   // Test 1: Zod Schema Import
   try {
-    const { 
-      contactFormSchema, 
-      tourBookingSchema, 
+    const {
+      contactFormSchema,
+      tourBookingSchema,
       carRentalBookingSchema,
       userProfileSchema,
-      validateForm 
+      validateForm
     } = await import('@/lib/validation');
 
-    if (contactFormSchema && tourBookingSchema && validateForm) {
+    if (contactFormSchema && tourBookingSchema && typeof validateForm === 'function') {
       checks.push({
         name: 'Zod Schema Import',
         status: 'pass',
@@ -46,24 +47,24 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Zod Schema Import',
       status: 'fail',
-      message: `Import error: ${error.message}`
+      message: `Import error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
 
   // Test 2: Security Utilities Import
   try {
-    const { 
-      sanitizeHTML, 
-      sanitizeText, 
-      sanitizeEmail, 
+    const {
+      sanitizeHTML,
+      sanitizeText,
+      sanitizeEmail,
       sanitizePhone,
       preventXSS,
       detectSuspiciousPatterns,
       sanitizeUserInput
     } = await import('@/lib/security');
 
-    if (sanitizeHTML && sanitizeText && sanitizeEmail && sanitizePhone) {
+    if (typeof sanitizeHTML === 'function' && typeof sanitizeText === 'function' && typeof sanitizeEmail === 'function' && typeof sanitizePhone === 'function') {
       checks.push({
         name: 'Security Utilities Import',
         status: 'pass',
@@ -81,7 +82,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Security Utilities Import',
       status: 'fail',
-      message: `Import error: ${error.message}`
+      message: `Import error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -143,7 +144,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Contact Form Validation',
       status: 'fail',
-      message: `Validation error: ${error.message}`
+      message: `Validation error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -186,7 +187,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'XSS Prevention',
       status: 'fail',
-      message: `XSS prevention error: ${error.message}`
+      message: `XSS prevention error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -228,7 +229,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'SQL Injection Prevention',
       status: 'fail',
-      message: `SQL injection prevention error: ${error.message}`
+      message: `SQL injection prevention error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -280,7 +281,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Email Sanitization',
       status: 'fail',
-      message: `Email sanitization error: ${error.message}`
+      message: `Email sanitization error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -297,7 +298,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     ];
 
     const sanitizedPhones = testPhones.map(phone => sanitizePhone(phone));
-    const allValid = sanitizedPhones.every(phone => 
+    const allValid = sanitizedPhones.every(phone =>
       phone.startsWith('+63') && phone.length >= 13
     );
 
@@ -319,7 +320,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Phone Sanitization',
       status: 'fail',
-      message: `Phone sanitization error: ${error.message}`
+      message: `Phone sanitization error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -357,7 +358,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Suspicious Pattern Detection',
       status: 'fail',
-      message: `Pattern detection error: ${error.message}`
+      message: `Pattern detection error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -400,7 +401,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Input Length Validation',
       status: 'fail',
-      message: `Length validation error: ${error.message}`
+      message: `Length validation error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -455,7 +456,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 };
 
 export default withErrorHandler(
-  withApiSecurity(null, {
+  withApiSecurity(undefined, {
     rateLimit: { windowMs: 60 * 1000, maxRequests: 10 }
   })(handler)
 );

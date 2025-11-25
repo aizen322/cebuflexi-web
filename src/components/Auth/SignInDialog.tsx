@@ -45,23 +45,24 @@ export function SignInDialog({ open, onOpenChange, onSwitchToSignUp }: SignInDia
       setEmail("");
       setPassword("");
       router.push("/loading");
-    } catch (err: any) {
+    } catch (err) {
       let errorMessage = "Failed to sign in. Please try again.";
-      
-      if (err.code === "auth/invalid-credential") {
+
+      const error = err as { code?: string };
+      if (error.code === "auth/invalid-credential") {
         errorMessage = "Invalid email or password. Please check your credentials and try again.";
-      } else if (err.code === "auth/user-not-found") {
+      } else if (error.code === "auth/user-not-found") {
         errorMessage = "No account found with this email address. Please check your email or sign up.";
-      } else if (err.code === "auth/wrong-password") {
+      } else if (error.code === "auth/wrong-password") {
         errorMessage = "Incorrect password. Please try again.";
-      } else if (err.code === "auth/invalid-email") {
+      } else if (error.code === "auth/invalid-email") {
         errorMessage = "Please enter a valid email address.";
-      } else if (err.code === "auth/too-many-requests") {
+      } else if (error.code === "auth/too-many-requests") {
         errorMessage = "Too many failed attempts. Please try again later.";
-      } else if (err.code === "auth/network-request-failed") {
+      } else if (error.code === "auth/network-request-failed") {
         errorMessage = "Network error. Please check your internet connection and try again.";
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -76,17 +77,18 @@ export function SignInDialog({ open, onOpenChange, onSwitchToSignUp }: SignInDia
       await signInWithGoogle();
       onOpenChange(false);
       router.push("/loading");
-    } catch (err: any) {
+    } catch (err) {
       let errorMessage = "Failed to sign in with Google. Please try again.";
-      
-      if (err.code === "auth/popup-closed-by-user") {
+
+      const error = err as { code?: string };
+      if (error.code === "auth/popup-closed-by-user") {
         errorMessage = "Sign-in cancelled. Please try again if you want to continue.";
-      } else if (err.code === "auth/popup-blocked") {
+      } else if (error.code === "auth/popup-blocked") {
         errorMessage = "Popup blocked by browser. Please allow popups and try again.";
-      } else if (err.code === "auth/cancelled-popup-request") {
+      } else if (error.code === "auth/cancelled-popup-request") {
         errorMessage = "Sign-in cancelled. Please try again.";
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);

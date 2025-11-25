@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Header } from "@/components/Layout/Header";
 import { Footer } from "@/components/Layout/Footer";
@@ -8,6 +8,14 @@ import { TourFilters } from "@/components/Tours/TourFilters";
 import { DIYTourCallout } from "@/components/Tours/DIYTourCallout";
 import { Tour } from "@/types";
 import { useToursData } from "@/contexts/ContentDataContext";
+
+interface TourFiltersData {
+  category?: string;
+  priceRange?: { min: number; max: number } | [number, number];
+  duration?: string;
+  location?: string;
+  search?: string;
+}
 
 export default function ToursPage() {
   const router = useRouter();
@@ -20,10 +28,49 @@ export default function ToursPage() {
     setFilteredTours(tours);
   }, [tours]);
 
+  const handleFilterChange = useCallback((filters: TourFiltersData) => {
+    let filtered = [...tours];
+
+    // Search filter (highest priority)
+    const searchValue = filters.search;
+    if (searchValue && searchValue.trim()) {
+      const searchTerm = searchValue.toLowerCase().trim();
+      filtered = filtered.filter(tour => 
+        tour.title.toLowerCase().includes(searchTerm) ||
+        tour.location.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    const categoryValue = filters.category;
+    if (categoryValue && categoryValue !== "all") {
+      filtered = filtered.filter(tour => tour.category === categoryValue);
+      setSelectedCategory(categoryValue);
+    } else {
+      setSelectedCategory("all");
+    }
+
+    const durationValue = filters.duration;
+    if (durationValue && durationValue !== "all") {
+      const [min, max] = durationValue.split("-").map(Number);
+      filtered = filtered.filter(tour => tour.duration >= min && tour.duration <= max);
+    }
+
+    const priceRange = filters.priceRange;
+    if (priceRange) {
+      const min = Array.isArray(priceRange) ? priceRange[0] : priceRange.min;
+      const max = Array.isArray(priceRange) ? priceRange[1] : priceRange.max;
+      filtered = filtered.filter(
+        (tour) => tour.price >= min && tour.price <= max
+      );
+    }
+
+    setFilteredTours(filtered);
+  }, [tours]);
+
   useEffect(() => {
-    const { category, date, search } = router.query;
+    const { category, search } = router.query;
     
-    const filters: any = {};
+    const filters: TourFiltersData = {};
     
     if (category && typeof category === "string") {
       filters.category = category;
@@ -38,41 +85,7 @@ export default function ToursPage() {
     }
     
     handleFilterChange(filters);
-  }, [router.query]);
-
-  const handleFilterChange = (filters: any) => {
-    let filtered = [...tours];
-
-    // Search filter (highest priority)
-    if (filters.search && filters.search.trim()) {
-      const searchTerm = filters.search.toLowerCase().trim();
-      filtered = filtered.filter(tour => 
-        tour.title.toLowerCase().includes(searchTerm) ||
-        tour.location.toLowerCase().includes(searchTerm)
-      );
-    }
-
-    if (filters.category && filters.category !== "all") {
-      filtered = filtered.filter(tour => tour.category === filters.category);
-      setSelectedCategory(filters.category);
-    } else {
-      setSelectedCategory("all");
-    }
-
-    if (filters.duration && filters.duration !== "all") {
-      const [min, max] = filters.duration.split("-").map(Number);
-      filtered = filtered.filter(tour => tour.duration >= min && tour.duration <= max);
-    }
-
-    if (filters.priceRange) {
-      const [min, max] = filters.priceRange;
-      filtered = filtered.filter(
-        (tour) => tour.price >= min && tour.price <= max
-      );
-    }
-
-    setFilteredTours(filtered);
-  };
+  }, [router.query, handleFilterChange]);
 
   return (
     <>

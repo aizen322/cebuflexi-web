@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useForm } from "react-hook-form";
+import { useForm, FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AdminProtectedRoute } from "@/components/Auth/AdminProtectedRoute";
 import { AdminLayout } from "@/components/Admin/AdminLayout";
@@ -89,11 +89,11 @@ export default function AdminEditLandmarkPage() {
           category: landmark.category || "Cultural",
           tourType: landmark.tourType || "cebu-city",
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.error("Error loading landmark:", error);
         toast({
           title: "Error",
-          description: error.message || "Failed to load landmark",
+          description: error instanceof Error ? error.message : "Failed to load landmark",
           variant: "destructive",
         });
         router.push("/admin/landmarks");
@@ -149,7 +149,7 @@ export default function AdminEditLandmarkPage() {
     const file = Array.from(e.dataTransfer.files).find(
       f => f.type.startsWith('image/')
     );
-    
+
     if (file) {
       processFile(file);
     }
@@ -169,9 +169,9 @@ export default function AdminEditLandmarkPage() {
     input.click();
   }
 
-  const onError = (errors: any) => {
+  const onError = (errors: FieldErrors<LandmarkFormData>) => {
     console.error("Form validation errors:", errors);
-    const firstError = Object.keys(errors)[0];
+    const firstError = Object.keys(errors)[0] as keyof LandmarkFormData;
     const errorMessage = errors[firstError]?.message || "Please check all required fields";
     toast({
       title: "Validation Error",
@@ -227,11 +227,11 @@ export default function AdminEditLandmarkPage() {
       });
 
       router.push("/admin/landmarks");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating landmark:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to update landmark",
+        description: error instanceof Error ? error.message : "Failed to update landmark",
         variant: "destructive",
       });
     } finally {
@@ -324,7 +324,12 @@ export default function AdminEditLandmarkPage() {
                 <div className="space-y-2">
                   <Label htmlFor="category">Category *</Label>
                   <Select
-                    onValueChange={(value) => setValue("category", value as any)}
+                    onValueChange={(value: string) =>
+                      setValue(
+                        "category",
+                        value as "Historical" | "Religious" | "Cultural" | "Nature"
+                      )
+                    }
                     value={watch("category")}
                   >
                     <SelectTrigger>
@@ -345,7 +350,9 @@ export default function AdminEditLandmarkPage() {
                 <div className="space-y-2">
                   <Label htmlFor="tourType">Tour Type *</Label>
                   <Select
-                    onValueChange={(value) => setValue("tourType", value as any)}
+                    onValueChange={(value: string) =>
+                      setValue("tourType", value as "cebu-city" | "mountain")
+                    }
                     value={watch("tourType")}
                   >
                     <SelectTrigger>
@@ -441,11 +448,10 @@ export default function AdminEditLandmarkPage() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${
-                  isDragging
+                className={`border-2 border-dashed rounded-lg p-6 transition-colors ${isDragging
                     ? "border-primary bg-primary/5"
                     : "border-muted-foreground/25 hover:border-primary/50"
-                }`}
+                  }`}
               >
                 {imagePreview ? (
                   <div className="relative group aspect-video max-w-2xl mx-auto">

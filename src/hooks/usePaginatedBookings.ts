@@ -109,12 +109,12 @@ export function usePaginatedBookings(
         // Client-side search filter (for search term)
         let filteredBookings = newBookings;
         if (isSearchMode) {
-          const term = filters.searchTerm!.toLowerCase().trim();
+          const term = (filters.searchTerm ?? "").toLowerCase().trim();
           filteredBookings = newBookings.filter(
             (b) =>
               b.userName.toLowerCase().includes(term) ||
               b.userEmail.toLowerCase().includes(term) ||
-              b.id.toLowerCase().includes(term)
+              (b.id && b.id.toLowerCase().includes(term))
           );
         }
 

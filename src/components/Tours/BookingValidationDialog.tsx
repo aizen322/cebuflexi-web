@@ -1,9 +1,9 @@
-import { useState } from "react";
 import { useRouter } from "next/router";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Calendar, Users, AlertTriangle, CheckCircle } from "lucide-react";
+import { Booking } from "@/services/bookingService";
 
 interface BookingValidationDialogProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ interface BookingValidationDialogProps {
   hasConfirmed: boolean;
   pendingCount: number;
   confirmedCount: number;
-  bookings: any[];
+  bookings: Booking[];
   forceAllow?: boolean;
   customMessage?: string;
 }
@@ -64,13 +64,13 @@ export function BookingValidationDialog({
             )}
           </DialogTitle>
           <DialogDescription>
-            {customMessage 
+            {customMessage
               ? customMessage
               : hasPending && !forceAllow
-              ? "You have pending tour bookings that need to be resolved first."
-              : hasConfirmed || (hasPending && forceAllow)
-              ? "You have existing tour bookings. Please review before proceeding."
-              : "You can proceed with your new booking."
+                ? "You have pending tour bookings that need to be resolved first."
+                : hasConfirmed || (hasPending && forceAllow)
+                  ? "You have existing tour bookings. Please review before proceeding."
+                  : "You can proceed with your new booking."
             }
           </DialogDescription>
         </DialogHeader>
@@ -86,12 +86,12 @@ export function BookingValidationDialog({
           )}
 
           {hasPending && forceAllow && (
-             <Alert>
-               <CheckCircle className="h-4 w-4" />
-               <AlertDescription>
-                 <strong>Note:</strong> You have {pendingCount} pending tour booking{pendingCount > 1 ? 's' : ''}. Since this is a booking for someone else, you can proceed (limit: 3 pending guest bookings).
-               </AlertDescription>
-             </Alert>
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Note:</strong> You have {pendingCount} pending tour booking{pendingCount > 1 ? 's' : ''}. Since this is a booking for someone else, you can proceed (limit: 3 pending guest bookings).
+              </AlertDescription>
+            </Alert>
           )}
 
           {hasConfirmed && (
@@ -124,11 +124,10 @@ export function BookingValidationDialog({
                         <p className="text-xs text-gray-600">Booking ID: {booking.id}</p>
                       </div>
                     </div>
-                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      booking.status === 'pending' 
-                        ? 'bg-yellow-100 text-yellow-800' 
+                    <div className={`px-2 py-1 rounded-full text-xs font-medium ${booking.status === 'pending'
+                        ? 'bg-yellow-100 text-yellow-800'
                         : 'bg-green-100 text-green-800'
-                    }`}>
+                      }`}>
                       {booking.status}
                     </div>
                   </div>
@@ -138,8 +137,8 @@ export function BookingValidationDialog({
           )}
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={hasPending && !forceAllow ? () => router.push("/account/bookings") : onClose}
             >
               {hasPending && !forceAllow ? "Review Bookings" : "Cancel"}

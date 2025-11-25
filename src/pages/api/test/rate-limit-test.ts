@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextApiRequest, NextApiResponse } from 'next';
 import { withApiSecurity, withErrorHandler } from '@/lib/api-middleware';
 
@@ -20,15 +21,15 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 
   // Test 1: Rate Limiting Import
   try {
-    const { 
-      RATE_LIMITS, 
-      checkRateLimit, 
-      createRateLimitKey, 
+    const {
+      RATE_LIMITS,
+      checkRateLimit,
+      createRateLimitKey,
       getClientIP,
-      RateLimiter 
+      RateLimiter
     } = await import('@/lib/rate-limit');
 
-    if (RATE_LIMITS && checkRateLimit && createRateLimitKey) {
+    if (RATE_LIMITS && typeof checkRateLimit === 'function' && typeof createRateLimitKey === 'function') {
       checks.push({
         name: 'Rate Limiting Import',
         status: 'pass',
@@ -46,7 +47,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Rate Limiting Import',
       status: 'fail',
-      message: `Import error: ${error.message}`
+      message: `Import error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -57,7 +58,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 
     const requiredConfigs = [
       'API_GENERAL',
-      'API_AUTH', 
+      'API_AUTH',
       'FORM_CONTACT',
       'FORM_BOOKING',
       'ADMIN_API',
@@ -66,8 +67,9 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     ];
 
     let configPassed = true;
+    const rateLimitsObj = RATE_LIMITS as Record<string, unknown>;
     requiredConfigs.forEach(configName => {
-      if (!RATE_LIMITS[configName]) {
+      if (!rateLimitsObj[configName]) {
         configPassed = false;
       }
     });
@@ -90,7 +92,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Rate Limit Configuration',
       status: 'fail',
-      message: `Configuration error: ${error.message}`
+      message: `Configuration error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -107,7 +109,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
         'cf-connecting-ip': '203.0.113.1'
       },
       socket: { remoteAddress: '127.0.0.1' }
-    } as any;
+    } as unknown as NextApiRequest;
 
     const ip = getClientIP(mockReq);
     if (ip && ip !== 'unknown') {
@@ -128,7 +130,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Client IP Detection',
       status: 'fail',
-      message: `IP detection error: ${error.message}`
+      message: `IP detection error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -141,7 +143,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
       url: '/api/test',
       method: 'GET',
       headers: { 'x-forwarded-for': '192.168.1.1' }
-    } as any;
+    } as unknown as NextApiRequest;
 
     const key = createRateLimitKey(mockReq);
     const keyWithIdentifier = createRateLimitKey(mockReq, 'test-identifier');
@@ -164,7 +166,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Rate Limit Key Generation',
       status: 'fail',
-      message: `Key generation error: ${error.message}`
+      message: `Key generation error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -215,7 +217,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Rate Limiter Class',
       status: 'fail',
-      message: `Rate limiter error: ${error.message}`
+      message: `Rate limiter error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -228,7 +230,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
       url: '/api/test',
       method: 'GET',
       headers: { 'x-forwarded-for': '192.168.1.100' }
-    } as any;
+    } as unknown as NextApiRequest;
 
     const config = { windowMs: 60000, maxRequests: 10 };
     const result = checkRateLimit(mockReq, config);
@@ -251,7 +253,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Rate Limit Check Function',
       status: 'fail',
-      message: `Rate limit check error: ${error.message}`
+      message: `Rate limit check error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -282,7 +284,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'User-Specific Rate Limiting',
       status: 'fail',
-      message: `User rate limiting error: ${error.message}`
+      message: `User rate limiting error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -293,9 +295,10 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 
     const middlewareTypes = ['api', 'auth', 'contactForm', 'bookingForm', 'admin', 'search', 'fileUpload'];
     let middlewarePassed = true;
+    const limitersObj = rateLimiters as Record<string, unknown>;
 
     middlewareTypes.forEach(type => {
-      if (!rateLimiters[type]) {
+      if (!limitersObj[type]) {
         middlewarePassed = false;
       }
     });
@@ -318,7 +321,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'API Middleware Integration',
       status: 'fail',
-      message: `Middleware integration error: ${error.message}`
+      message: `Middleware integration error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -395,7 +398,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 };
 
 export default withErrorHandler(
-  withApiSecurity(null, {
+  withApiSecurity(undefined, {
     rateLimit: { windowMs: 60 * 1000, maxRequests: 10 }
   })(handler)
 );

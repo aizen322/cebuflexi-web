@@ -18,15 +18,15 @@ export default function UnauthorizedPage() {
                 <ShieldAlert className="h-12 w-12 text-red-600" />
               </div>
             </div>
-            
+
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
               Access Denied
             </h1>
-            
+
             <p className="text-gray-600 mb-2 text-sm sm:text-base">
               You don't have permission to access this page.
             </p>
-            
+
             <p className="text-gray-500 mb-8 text-xs sm:text-sm">
               This area is restricted to administrators only.
             </p>
@@ -41,7 +41,7 @@ export default function UnauthorizedPage() {
                   Return Home
                 </Link>
               </Button>
-              
+
               <Button
                 asChild
                 variant="outline"
@@ -55,7 +55,7 @@ export default function UnauthorizedPage() {
               </Button>
             </div>
           </div>
-          
+
           <p className="mt-6 text-xs text-gray-500">
             If you believe this is an error, please contact support.
           </p>
@@ -64,4 +64,7 @@ export default function UnauthorizedPage() {
     </>
   );
 }
+
+UnauthorizedPage.getLayout = (page: React.ReactElement) => page;
+
 

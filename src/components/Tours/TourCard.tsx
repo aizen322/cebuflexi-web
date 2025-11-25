@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Users, MapPin, Star } from "lucide-react";
 import { Tour } from "@/types";
 import { motion } from "framer-motion";
+import { AppImage } from "@/components/ui/app-image";
 
 interface TourCardProps {
   tour: Tour;
@@ -14,37 +15,26 @@ interface TourCardProps {
 export function TourCard({ tour }: TourCardProps) {
   return (
     <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full group">
-      <div className="relative h-56 overflow-hidden bg-gray-200">
-        {tour.images && tour.images.length > 0 && tour.images[0] ? (
-          <img
-            src={tour.images[0]}
-            alt={`${tour.title} - Cebu tour package`}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-              (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400"><span>No Image</span></div>';
-            }}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
-            <span>No Image</span>
-          </div>
-        )}
+      <AppImage
+        src={tour.images?.[0] || "/images/placeholder.jpg"}
+        alt={`${tour.title} - Cebu tour package`}
+        fill
+        containerClassName="relative h-56 overflow-hidden bg-gray-200"
+        className="object-cover group-hover:scale-110 transition-transform duration-500"
+        sizes="(min-width: 1024px) 33vw, 100vw"
+      >
         <Badge className="absolute top-4 left-4 bg-blue-600 text-white transition-transform duration-300 group-hover:scale-110">
           {tour.category}
         </Badge>
         {tour.featured && (
-          <motion.div
-            whileHover={{ scale: 1.1, rotate: 5 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div whileHover={{ scale: 1.1, rotate: 5 }} transition={{ duration: 0.3 }}>
             <Badge className="absolute top-4 right-4 bg-yellow-500 text-white">
               <Star className="h-3 w-3 mr-1" />
               Featured
             </Badge>
           </motion.div>
         )}
-      </div>
+      </AppImage>
 
       <CardHeader className="flex-grow">
         <CardTitle className="text-xl line-clamp-2 group-hover:text-blue-600 transition-colors duration-300">{tour.title}</CardTitle>

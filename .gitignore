@@ -37,3 +37,11 @@ next-env.d.ts
 
 # firebase
 firebase-service-account.json
+
+# Temporary error/log files
+*.ps1
+*error*.txt
+*lint*.txt
+build_log*.txt
+build-output.txt
+debug.log

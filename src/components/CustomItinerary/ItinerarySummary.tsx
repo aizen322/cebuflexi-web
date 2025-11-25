@@ -17,7 +17,6 @@ export function ItinerarySummary({ selectedLandmarks, isFullPackage }: Itinerary
   const pricingBreakdown = getPricingBreakdown(totalTime, isFullPackage, selectedLandmarks.length);
   const shouldShowFullPackageSuggestion = !isFullPackage && isFullPackageBetter(totalTime) && selectedLandmarks.length > 0;
 
-  const totalHours = Math.ceil(totalTime / 60);
   const visitTime = selectedLandmarks.reduce((sum, l) => sum + l.estimatedDuration, 0);
   const travelTime = totalTime - visitTime;
 

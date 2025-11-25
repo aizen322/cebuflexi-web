@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AppImage } from "@/components/ui/app-image";
 import { Clock, Users, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { FadeIn } from "@/components/Animation/FadeIn";
@@ -35,24 +36,18 @@ export function FeaturedTours() {
             {featuredTours.map((tour) => (
               <motion.div key={tour.id} variants={staggerItem}>
                 <Card className="overflow-hidden hover:shadow-xl transition-shadow duration-300 group">
-                  <div className="relative h-64 overflow-hidden bg-gray-200">
-                    {tour.images && tour.images.length > 0 && tour.images[0] ? (
-                      <img
-                        src={tour.images[0]}
-                        alt={tour.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          (e.target as HTMLImageElement).parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400"><span>No Image</span></div>';
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
-                        <span>No Image</span>
-                      </div>
-                    )}
-                    <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">{tour.category}</Badge>
-                  </div>
+                  <AppImage
+                    src={tour.images?.[0] || "/images/placeholder.jpg"}
+                    alt={tour.title}
+                    fill
+                    containerClassName="relative h-64 overflow-hidden bg-gray-200"
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 25vw, (min-width: 768px) 33vw, 100vw"
+                  >
+                    <Badge className="absolute top-4 left-4 bg-blue-600 transition-transform duration-300 group-hover:scale-110">
+                      {tour.category}
+                    </Badge>
+                  </AppImage>
                   <CardHeader>
                     <CardTitle className="text-xl group-hover:text-blue-600 transition-colors duration-300 min-h-[56px] line-clamp-2">{tour.title}</CardTitle>
                     <CardDescription className="min-h-[48px]">{tour.shortDescription}</CardDescription>

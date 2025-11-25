@@ -11,8 +11,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   User, 
   Mail, 
-  Calendar,
-  MapPin,
   Edit,
   Save,
   X
@@ -56,7 +54,7 @@ export default function UserProfilePage() {
         description: "Your profile has been updated successfully.",
       });
       setIsEditing(false);
-    } catch (error) {
+    } catch {
       toast({
         title: "Update Failed",
         description: "There was an error updating your profile. Please try again.",
@@ -65,7 +63,7 @@ export default function UserProfilePage() {
     }
   };
 
-  const getInitials = (name: string | null) => {
+  const getInitials = (name: string | null | undefined) => {
     if (!name) return "U";
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };

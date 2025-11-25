@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextApiRequest, NextApiResponse } from 'next';
 import { withApiSecurity, withErrorHandler } from '@/lib/api-middleware';
 import { verifyIdToken, getUserRole, isUserAdmin } from '@/lib/firebase-admin';
@@ -40,7 +41,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Firebase Admin SDK Import',
       status: 'fail',
-      message: `Import error: ${error.message}`
+      message: `Import error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -74,7 +75,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   // Test 3: Role Functions
   try {
     const { getUserRole, isUserAdmin } = await import('@/lib/firebase-admin');
-    
+
     // Test with non-existent user
     const nonExistentRole = await getUserRole('non-existent-user-id');
     if (nonExistentRole === null) {
@@ -112,7 +113,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Role Functions',
       status: 'fail',
-      message: `Error testing role functions: ${error.message}`
+      message: `Error testing role functions: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -120,7 +121,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   // Test 4: API Middleware Import
   try {
     const { withAuth, withRole, withApiSecurity } = await import('@/lib/api-middleware');
-    if (withAuth && withRole && withApiSecurity) {
+    if (typeof withAuth === 'function' && typeof withRole === 'function' && typeof withApiSecurity === 'function') {
       checks.push({
         name: 'API Middleware Import',
         status: 'pass',
@@ -138,7 +139,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'API Middleware Import',
       status: 'fail',
-      message: `Import error: ${error.message}`
+      message: `Import error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -185,7 +186,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
     checks.push({
       name: 'Middleware Configuration',
       status: 'fail',
-      message: `Middleware error: ${error.message}`
+      message: `Middleware error: ${(error instanceof Error ? error.message : String(error))}`
     });
     overallStatus = 'fail';
   }
@@ -205,8 +206,8 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
   });
 
   // Test 8: CORS Configuration
-  const corsOrigins = process.env.NODE_ENV === 'production' 
-    ? 'https://cebuflexitours.com' 
+  const corsOrigins = process.env.NODE_ENV === 'production'
+    ? 'https://cebuflexitours.com'
     : 'http://localhost:3000';
 
   checks.push({
@@ -271,7 +272,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse<TestResult>) =>
 };
 
 export default withErrorHandler(
-  withApiSecurity(null, {
+  withApiSecurity(undefined, {
     rateLimit: { windowMs: 60 * 1000, maxRequests: 10 }
   })(handler)
 );

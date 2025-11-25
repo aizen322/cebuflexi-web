@@ -91,6 +91,7 @@ export default function AdminToursPage() {
         description: "Tour featured status updated",
       });
     } catch (error) {
+      console.error("Error updating tour featured status:", error);
       toast({
         title: "Error",
         description: "Failed to update tour",
@@ -107,6 +108,7 @@ export default function AdminToursPage() {
         description: "Tour availability updated",
       });
     } catch (error) {
+      console.error("Error updating tour availability:", error);
       toast({
         title: "Error",
         description: "Failed to update tour",
@@ -128,6 +130,7 @@ export default function AdminToursPage() {
       setDeleteDialogOpen(false);
       setTourToDelete(null);
     } catch (error) {
+      console.error("Error deleting tour:", error);
       toast({
         title: "Error",
         description: "Failed to delete tour",

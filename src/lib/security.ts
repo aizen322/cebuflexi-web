@@ -3,7 +3,7 @@ import DOMPurify from 'isomorphic-dompurify';
 // HTML sanitization
 export function sanitizeHTML(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   // Basic cleanup first
   const cleaned = input
     .trim()
@@ -21,7 +21,7 @@ export function sanitizeHTML(input: string): string {
 // Text sanitization (no HTML)
 export function sanitizeText(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   return input
     .trim()
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control characters
@@ -36,49 +36,49 @@ export function sanitizeText(input: string): string {
 // Email sanitization
 export function sanitizeEmail(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   // Basic cleanup
   const cleaned = input
     .trim()
     .toLowerCase()
     .replace(/\s+/g, '') // Remove all whitespace
     .replace(/[^\w@.-]/g, ''); // Keep only alphanumeric, @, ., and -
-  
+
   // Validate email format
   const emailRegex = /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
-  
+
   if (!emailRegex.test(cleaned)) {
     return '';
   }
-  
+
   // Additional validation checks
   const [localPart, domain] = cleaned.split('@');
-  
+
   // Local part validation
   if (localPart.length > 64 || localPart.length < 1) {
     return '';
   }
-  
+
   // Domain validation
   if (domain.length > 253 || domain.length < 1) {
     return '';
   }
-  
+
   // Check for consecutive dots
   if (cleaned.includes('..')) {
     return '';
   }
-  
+
   // Check for dots at start/end of local part
   if (localPart.startsWith('.') || localPart.endsWith('.')) {
     return '';
   }
-  
+
   // Check for dots at start/end of domain
   if (domain.startsWith('.') || domain.endsWith('.')) {
     return '';
   }
-  
+
   // Limit total length
   return cleaned.substring(0, 254);
 }
@@ -86,7 +86,7 @@ export function sanitizeEmail(input: string): string {
 // Phone number sanitization
 export function sanitizePhone(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   // Remove all non-digit characters except + at the beginning
   let cleaned = input.trim();
   if (cleaned.startsWith('+')) {
@@ -94,7 +94,7 @@ export function sanitizePhone(input: string): string {
   } else {
     cleaned = cleaned.replace(/\D/g, '');
   }
-  
+
   // Validate Philippine phone number format
   if (cleaned.startsWith('+63')) {
     return cleaned.substring(0, 13); // +63XXXXXXXXXX
@@ -105,25 +105,25 @@ export function sanitizePhone(input: string): string {
   } else if (cleaned.length === 10) {
     return '+63' + cleaned; // +63XXXXXXXXXX
   }
-  
+
   return cleaned;
 }
 
 // URL sanitization
 export function sanitizeURL(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   try {
     const url = new URL(input);
-    
+
     // Only allow http and https protocols
     if (!['http:', 'https:'].includes(url.protocol)) {
       return '';
     }
-    
+
     // Remove dangerous characters from pathname
     url.pathname = url.pathname.replace(/[<>]/g, '');
-    
+
     return url.toString();
   } catch {
     return '';
@@ -133,7 +133,7 @@ export function sanitizeURL(input: string): string {
 // File name sanitization
 export function sanitizeFileName(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   return input
     .replace(/[^a-zA-Z0-9._-]/g, '_') // Replace invalid characters with underscore
     .replace(/_{2,}/g, '_') // Replace multiple underscores with single
@@ -144,7 +144,7 @@ export function sanitizeFileName(input: string): string {
 // SQL injection prevention (basic)
 export function sanitizeSQL(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   return input
     .replace(/['";\\]/g, '') // Remove quotes and backslashes
     .replace(/--/g, '') // Remove SQL comments
@@ -156,7 +156,7 @@ export function sanitizeSQL(input: string): string {
 // XSS prevention
 export function preventXSS(input: string): string {
   if (typeof input !== 'string') return '';
-  
+
   return input
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -176,37 +176,37 @@ export function validateLength(input: string, min: number = 0, max: number = Inf
 // Check for suspicious patterns
 export function detectSuspiciousPatterns(input: string): string[] {
   const warnings: string[] = [];
-  
+
   if (typeof input !== 'string') return warnings;
-  
+
   // Check for potential XSS
   if (/<script|javascript:|data:|vbscript:|on\w+\s*=/i.test(input)) {
     warnings.push('Potential XSS detected');
   }
-  
+
   // Check for SQL injection attempts
   if (/(union|select|insert|update|delete|drop|create|alter|exec|execute).*from|where|into/i.test(input)) {
     warnings.push('Potential SQL injection detected');
   }
-  
+
   // Check for command injection
   if (/[;&|`$(){}[\]]/.test(input)) {
     warnings.push('Potential command injection detected');
   }
-  
+
   // Check for excessive special characters
   const specialCharCount = (input.match(/[^a-zA-Z0-9\s]/g) || []).length;
   if (specialCharCount > input.length * 0.3) {
     warnings.push('Excessive special characters detected');
   }
-  
+
   return warnings;
 }
 
 // Comprehensive sanitization for user input
 export function sanitizeUserInput(input: string, type: 'text' | 'html' | 'email' | 'phone' | 'url' | 'filename' = 'text'): string {
   if (typeof input !== 'string') return '';
-  
+
   switch (type) {
     case 'html':
       return sanitizeHTML(input);
@@ -238,39 +238,39 @@ export function validateCSRFToken(token: string, sessionToken: string): boolean 
 // Rate limiting helper
 export class RateLimiter {
   private store = new Map<string, { count: number; resetTime: number }>();
-  
+
   constructor(
     private windowMs: number = 15 * 60 * 1000, // 15 minutes
     private maxRequests: number = 100
-  ) {}
-  
+  ) { }
+
   isAllowed(key: string): boolean {
     const now = Date.now();
     const current = this.store.get(key);
-    
+
     if (!current || now > current.resetTime) {
       this.store.set(key, { count: 1, resetTime: now + this.windowMs });
       return true;
     }
-    
+
     if (current.count >= this.maxRequests) {
       return false;
     }
-    
+
     current.count++;
     return true;
   }
-  
+
   getRemainingRequests(key: string): number {
     const current = this.store.get(key);
     if (!current) return this.maxRequests;
-    
+
     const now = Date.now();
     if (now > current.resetTime) return this.maxRequests;
-    
+
     return Math.max(0, this.maxRequests - current.count);
   }
-  
+
   getResetTime(key: string): number | null {
     const current = this.store.get(key);
     return current ? current.resetTime : null;
@@ -278,7 +278,7 @@ export class RateLimiter {
 }
 
 // Input validation helper
-export function validateInput(input: any, rules: {
+export function validateInput<T = unknown>(input: T, rules: {
   type?: 'string' | 'number' | 'boolean' | 'email' | 'phone' | 'url';
   required?: boolean;
   minLength?: number;
@@ -286,19 +286,19 @@ export function validateInput(input: any, rules: {
   pattern?: RegExp;
   sanitize?: boolean;
   sanitizeType?: 'text' | 'html' | 'email' | 'phone' | 'url' | 'filename';
-}): { valid: boolean; value?: any; error?: string } {
+}): { valid: boolean; value?: T; error?: string } {
   // Check required
   if (rules.required && (input === null || input === undefined || input === '')) {
     return { valid: false, error: 'This field is required' };
   }
-  
+
   // Skip validation if not required and empty
   if (!rules.required && (input === null || input === undefined || input === '')) {
     return { valid: true, value: input };
   }
-  
+
   let value = input;
-  
+
   // Type validation
   if (rules.type) {
     switch (rules.type) {
@@ -323,14 +323,14 @@ export function validateInput(input: any, rules: {
         break;
       case 'url':
         try {
-          new URL(value);
+          new URL(value as string);
         } catch {
           return { valid: false, error: 'Must be a valid URL' };
         }
         break;
     }
   }
-  
+
   // Length validation
   if (typeof value === 'string') {
     if (rules.minLength && value.length < rules.minLength) {
@@ -340,16 +340,16 @@ export function validateInput(input: any, rules: {
       return { valid: false, error: `Must be no more than ${rules.maxLength} characters` };
     }
   }
-  
+
   // Pattern validation
   if (rules.pattern && typeof value === 'string' && !rules.pattern.test(value)) {
     return { valid: false, error: 'Invalid format' };
   }
-  
+
   // Sanitization
   if (rules.sanitize && typeof value === 'string') {
-    value = sanitizeUserInput(value, rules.sanitizeType);
+    value = sanitizeUserInput(value, rules.sanitizeType) as T;
   }
-  
+
   return { valid: true, value };
 }

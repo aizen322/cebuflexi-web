@@ -1,9 +1,10 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Car, Check, Shield, Clock } from "lucide-react";
+import { Car, Shield, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
+import { AppImage } from "@/components/ui/app-image";
 
 export function CarRentalTeaser() {
   const features = [
@@ -85,10 +86,13 @@ export function CarRentalTeaser() {
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img
+              <AppImage
                 src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&h=600&fit=crop"
                 alt="Sedan car rental"
-                className="w-full h-48 object-cover"
+                fill
+                containerClassName="w-full h-48"
+                className="object-cover"
+                sizes="(min-width: 1024px) 33vw, 100vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
                 <div>
@@ -103,10 +107,13 @@ export function CarRentalTeaser() {
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img
+              <AppImage
                 src="https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?w=800&h=600&fit=crop"
                 alt="SUV car rental"
-                className="w-full h-48 object-cover"
+                fill
+                containerClassName="w-full h-48"
+                className="object-cover"
+                sizes="(min-width: 1024px) 33vw, 100vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
                 <div>
@@ -121,10 +128,13 @@ export function CarRentalTeaser() {
               whileHover={{ scale: 1.03 }}
               transition={{ duration: 0.3 }}
             >
-              <img
+              <AppImage
                 src="https://images.unsplash.com/photo-1464219789935-c2d9d9aba644?w=800&h=600&fit=crop"
                 alt="Van car rental"
-                className="w-full h-48 object-cover"
+                fill
+                containerClassName="w-full h-48"
+                className="object-cover"
+                sizes="(min-width: 1024px) 33vw, 100vw"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
                 <div>

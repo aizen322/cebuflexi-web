@@ -1,5 +1,12 @@
+interface TourFilters {
+  category?: string;
+  priceRange?: { min: number; max: number };
+  duration?: string;
+  location?: string;
+  search?: string;
+}
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -11,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search } from "lucide-react";
 
 interface TourFiltersProps {
-  onFilterChange: (filters: any) => void;
+  onFilterChange: (filters: TourFilters) => void;
 }
 
 export function TourFilters({ onFilterChange }: TourFiltersProps) {
@@ -22,18 +29,18 @@ export function TourFilters({ onFilterChange }: TourFiltersProps) {
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Initialize search query from URL
-  useState(() => {
+  useEffect(() => {
     const { search } = router.query;
     if (search && typeof search === "string") {
       setSearchQuery(search);
     }
-  });
+  }, [router.query]);
 
   const applyFilters = () => {
     onFilterChange({
       category,
       duration,
-      priceRange,
+      priceRange: { min: priceRange[0], max: priceRange[1] },
       search: searchQuery
     });
   };
@@ -48,12 +55,12 @@ export function TourFilters({ onFilterChange }: TourFiltersProps) {
       params.delete('search');
     }
     router.push(`/tours?${params.toString()}`, undefined, { shallow: true });
-    
+
     // Apply filters immediately when search changes
     onFilterChange({
       category,
       duration,
-      priceRange,
+      priceRange: { min: priceRange[0], max: priceRange[1] },
       search: value.trim() ? value : ""
     });
   };
@@ -66,7 +73,7 @@ export function TourFilters({ onFilterChange }: TourFiltersProps) {
     onFilterChange({
       category: "all",
       duration: "",
-      priceRange: [0, 15000],
+      priceRange: { min: 0, max: 15000 },
       search: ""
     });
     // Clear search from URL

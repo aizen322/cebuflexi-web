@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyIdToken } from './src/lib/firebase-admin';
+import { DecodedToken, verifyIdToken } from './src/lib/auth-edge';
+import { isRateLimited } from './src/lib/rate-limit-edge';
+
+// Extended user type with role and isAdmin for middleware
+interface AuthenticatedUser {
+  uid: string;
+  email?: string;
+  role: string;
+  isAdmin: boolean;
+}
 
 // Define protected routes and their required roles
 const protectedRoutes = {
@@ -9,49 +18,15 @@ const protectedRoutes = {
   '/api/admin': ['admin'],
 };
 
-// Rate limiting store (in production, use Redis or database)
-const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
-
-// Rate limiting configuration
-const RATE_LIMIT = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  maxRequests: 100, // limit each IP to 100 requests per windowMs
-  authMaxRequests: 10, // limit auth endpoints to 10 requests per windowMs
-};
-
-function getRateLimitKey(ip: string, endpoint: string): string {
-  return `${ip}:${endpoint}`;
-}
-
-function isRateLimited(ip: string, endpoint: string): boolean {
-  const key = getRateLimitKey(ip, endpoint);
-  const now = Date.now();
-  const limit = endpoint.includes('auth') ? RATE_LIMIT.authMaxRequests : RATE_LIMIT.maxRequests;
-  
-  const current = rateLimitStore.get(key);
-  
-  if (!current || now > current.resetTime) {
-    rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT.windowMs });
-    return false;
-  }
-  
-  if (current.count >= limit) {
-    return true;
-  }
-  
-  current.count++;
-  return false;
-}
-
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for');
   const realIP = request.headers.get('x-real-ip');
   const cfConnectingIP = request.headers.get('cf-connecting-ip');
-  
+
   if (cfConnectingIP) return cfConnectingIP;
   if (realIP) return realIP;
   if (forwarded) return forwarded.split(',')[0].trim();
-  
+
   // NextRequest doesn't have an ip property, so we'll use a fallback
   return 'unknown';
 }
@@ -72,18 +47,18 @@ function getTokenFromRequest(request: NextRequest): string | null {
   return null;
 }
 
-async function verifyFirebaseToken(request: NextRequest): Promise<{ valid: boolean; user?: any }> {
+async function verifyFirebaseToken(request: NextRequest): Promise<{ valid: boolean; user?: AuthenticatedUser }> {
   try {
     const token = getTokenFromRequest(request);
-    
+
     if (!token) {
       return { valid: false };
     }
 
-    // Verify token with Firebase Admin SDK
+    // Verify token with Edge-compatible library
     const verification = await verifyIdToken(token);
-    
-    if (!verification.success) {
+
+    if (!verification.success || !verification.user) {
       return { valid: false };
     }
 
@@ -91,15 +66,15 @@ async function verifyFirebaseToken(request: NextRequest): Promise<{ valid: boole
     const user = verification.user;
     const role = user.customClaims?.role || 'user';
     const isAdmin = role === 'admin';
-    
-    return { 
-      valid: true, 
-      user: { 
-        uid: user.uid, 
+
+    return {
+      valid: true,
+      user: {
+        uid: user.uid,
         email: user.email,
         role: role,
         isAdmin: isAdmin
-      } 
+      }
     };
   } catch (error) {
     console.error('Token verification error:', error);
@@ -130,7 +105,7 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()');
-  
+
   // HSTS (only in production with HTTPS)
   if (process.env.NODE_ENV === 'production') {
     response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
@@ -142,19 +117,19 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const ip = getClientIP(request);
-  
+
   // Create response with security headers
   const response = NextResponse.next();
-  
+
   // Add CORS headers for API routes
   if (pathname.startsWith('/api/')) {
-    response.headers.set('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production' 
-      ? 'https://cebuflexitours.com' 
+    response.headers.set('Access-Control-Allow-Origin', process.env.NODE_ENV === 'production'
+      ? 'https://cebuflexitours.com'
       : 'http://localhost:3000'
     );
     response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-CSRF-Token');
-    
+
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 200, headers: response.headers });
     }
@@ -163,9 +138,9 @@ export async function middleware(request: NextRequest) {
   // Rate limiting
   if (isRateLimited(ip, pathname)) {
     return new Response(
-      JSON.stringify({ error: 'Too many requests' }), 
-      { 
-        status: 429, 
+      JSON.stringify({ error: 'Too many requests' }),
+      {
+        status: 429,
         headers: { 'Content-Type': 'application/json' }
       }
     );
@@ -173,25 +148,25 @@ export async function middleware(request: NextRequest) {
 
   // Check if route requires authentication (admin routes)
   const isAdminRoute = pathname.startsWith('/admin') || pathname.startsWith('/api/admin');
-  const isProtectedRoute = Object.keys(protectedRoutes).some(route => 
+  const isProtectedRoute = Object.keys(protectedRoutes).some(route =>
     pathname.startsWith(route)
   );
 
   if (isAdminRoute || isProtectedRoute) {
     const tokenVerification = await verifyFirebaseToken(request);
-    
-    if (!tokenVerification.valid) {
+
+    if (!tokenVerification.valid || !tokenVerification.user) {
       // For API routes, return 401
       if (pathname.startsWith('/api/')) {
         return new Response(
-          JSON.stringify({ error: 'Unauthorized' }), 
-          { 
-            status: 401, 
+          JSON.stringify({ error: 'Unauthorized' }),
+          {
+            status: 401,
             headers: { 'Content-Type': 'application/json' }
           }
         );
       }
-      
+
       // For page routes, redirect to login
       const loginUrl = new URL('/login', request.url);
       loginUrl.searchParams.set('redirect', pathname);
@@ -209,14 +184,14 @@ export async function middleware(request: NextRequest) {
         // For API routes, return 403
         if (pathname.startsWith('/api/')) {
           return new Response(
-            JSON.stringify({ error: 'Forbidden - Admin access required' }), 
-            { 
-              status: 403, 
+            JSON.stringify({ error: 'Forbidden - Admin access required' }),
+            {
+              status: 403,
               headers: { 'Content-Type': 'application/json' }
             }
           );
         }
-        
+
         // For page routes, redirect to unauthorized
         return NextResponse.redirect(new URL('/unauthorized', request.url));
       }
