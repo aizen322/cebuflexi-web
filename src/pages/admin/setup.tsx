@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 
-export default function AdminSetupPage() {
+const AdminSetupPage: NextPageWithLayout = () => {
   const { user } = useAuth();
   const [secret, setSecret] = useState("");
   const [email, setEmail] = useState(user?.email || "");
@@ -124,5 +125,9 @@ export default function AdminSetupPage() {
       </Card>
     </div>
   );
-}
+};
+
+AdminSetupPage.getLayout = (page: ReactElement) => page;
+
+export default AdminSetupPage;
 

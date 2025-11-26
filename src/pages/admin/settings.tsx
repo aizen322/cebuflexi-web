@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -14,7 +15,7 @@ import { Save } from "lucide-react";
 import { COLLECTIONS } from "@/lib/firestore-collections";
 import type { SiteSettings } from "@/types";
 
-export default function AdminSettingsPage() {
+const AdminSettingsPage: NextPageWithLayout = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState<SiteSettings>({
@@ -176,6 +177,10 @@ export default function AdminSettingsPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminSettingsPage.getLayout = (page: ReactElement) => page;
+
+export default AdminSettingsPage;
 
 

@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { AdminProtectedRoute } from "@/components/Auth/AdminProtectedRoute";
@@ -27,7 +28,7 @@ import { Search, Eye, Download, Filter, Loader2, X } from "lucide-react";
 import { format } from "date-fns";
 import { usePaginatedBookings } from "@/hooks/usePaginatedBookings";
 
-export default function AdminBookingsPage() {
+const AdminBookingsPage: NextPageWithLayout = () => {
   const router = useRouter();
   const [searchInput, setSearchInput] = useState("");
   const [activeSearchTerm, setActiveSearchTerm] = useState<string>("");
@@ -278,6 +279,10 @@ export default function AdminBookingsPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminBookingsPage.getLayout = (page: ReactElement) => page;
+
+export default AdminBookingsPage;
 
 

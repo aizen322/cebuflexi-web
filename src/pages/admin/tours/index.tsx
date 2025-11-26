@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -34,7 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export default function AdminToursPage() {
+const AdminToursPage: NextPageWithLayout = () => {
   const router = useRouter();
   const { toast } = useToast();
   const [tours, setTours] = useState<Tour[]>([]);
@@ -323,6 +324,10 @@ export default function AdminToursPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminToursPage.getLayout = (page: ReactElement) => page;
+
+export default AdminToursPage;
 
 

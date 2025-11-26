@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -18,7 +19,7 @@ interface User {
   createdAt: Date;
 }
 
-export default function AdminUsersPage() {
+const AdminUsersPage: NextPageWithLayout = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -103,6 +104,10 @@ export default function AdminUsersPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminUsersPage.getLayout = (page: ReactElement) => page;
+
+export default AdminUsersPage;
 
 

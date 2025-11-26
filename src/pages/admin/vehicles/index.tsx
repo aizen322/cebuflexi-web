@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -14,7 +15,7 @@ import { COLLECTIONS } from "@/lib/firestore-collections";
 import { Vehicle } from "@/types";
 import { toggleVehicleAvailability } from "@/services/admin/vehicleService";
 
-export default function AdminVehiclesPage() {
+const AdminVehiclesPage: NextPageWithLayout = () => {
   const { toast } = useToast();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
@@ -153,6 +154,10 @@ export default function AdminVehiclesPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminVehiclesPage.getLayout = (page: ReactElement) => page;
+
+export default AdminVehiclesPage;
 
 

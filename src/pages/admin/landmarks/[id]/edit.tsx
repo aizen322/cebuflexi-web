@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useForm, FieldErrors } from "react-hook-form";
@@ -25,7 +26,7 @@ import { updateLandmark, getLandmarkById } from "@/services/admin/landmarkServic
 import { uploadLandmarkImage, validateImageFile } from "@/lib/admin/imageUpload";
 import type { Landmark } from "@/types";
 
-export default function AdminEditLandmarkPage() {
+const AdminEditLandmarkPage: NextPageWithLayout = () => {
   const router = useRouter();
   const { id } = router.query;
   const { toast } = useToast();
@@ -515,5 +516,9 @@ export default function AdminEditLandmarkPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminEditLandmarkPage.getLayout = (page: ReactElement) => page;
+
+export default AdminEditLandmarkPage;
 

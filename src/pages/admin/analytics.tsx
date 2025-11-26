@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -10,7 +11,7 @@ import { COLLECTIONS } from "@/lib/firestore-collections";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
-export default function AdminAnalyticsPage() {
+const AdminAnalyticsPage: NextPageWithLayout = () => {
   const [bookingsByStatus, setBookingsByStatus] = useState<{ name: string; value: number }[]>([]);
   const [bookingsByType, setBookingsByType] = useState<{ name: string; count: number }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -131,4 +132,8 @@ export default function AdminAnalyticsPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminAnalyticsPage.getLayout = (page: ReactElement) => page;
+
+export default AdminAnalyticsPage;

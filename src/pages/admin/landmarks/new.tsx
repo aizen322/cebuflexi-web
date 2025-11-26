@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useForm } from "react-hook-form";
@@ -24,7 +25,7 @@ import { createLandmark } from "@/services/admin/landmarkService";
 import { uploadLandmarkImage, validateImageFile } from "@/lib/admin/imageUpload";
 import type { Landmark } from "@/types";
 
-export default function AdminNewLandmarkPage() {
+const AdminNewLandmarkPage: NextPageWithLayout = () => {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -431,5 +432,9 @@ export default function AdminNewLandmarkPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminNewLandmarkPage.getLayout = (page: ReactElement) => page;
+
+export default AdminNewLandmarkPage;
 

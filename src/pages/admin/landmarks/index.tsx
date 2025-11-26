@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import Link from "next/link";
 import { collection, onSnapshot } from "firebase/firestore";
@@ -13,7 +14,7 @@ import { Landmark } from "@/types";
 import { Plus, Edit } from "lucide-react";
 import { AppImage } from "@/components/ui/app-image";
 
-export default function AdminLandmarksPage() {
+const AdminLandmarksPage: NextPageWithLayout = () => {
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -110,6 +111,10 @@ export default function AdminLandmarksPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminLandmarksPage.getLayout = (page: ReactElement) => page;
+
+export default AdminLandmarksPage;
 
 

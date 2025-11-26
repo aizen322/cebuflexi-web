@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Image from "next/image";
@@ -26,7 +27,7 @@ import { updateVehicle, getVehicleById } from "@/services/admin/vehicleService";
 import { uploadVehicleImage, validateImageFile } from "@/lib/admin/imageUpload";
 import type { Vehicle } from "@/types";
 
-export default function AdminEditVehiclePage() {
+const AdminEditVehiclePage: NextPageWithLayout = () => {
   const router = useRouter();
   const { id } = router.query;
   const { toast } = useToast();
@@ -637,5 +638,9 @@ export default function AdminEditVehiclePage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminEditVehiclePage.getLayout = (page: ReactElement) => page;
+
+export default AdminEditVehiclePage;
 

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { doc, getDoc } from "firebase/firestore";
@@ -74,7 +75,7 @@ interface BookingDetails {
   guestPhone?: string;
 }
 
-export default function AdminBookingDetailPage() {
+const AdminBookingDetailPage: NextPageWithLayout = () => {
   const router = useRouter();
   const { id } = router.query;
   const { toast } = useToast();
@@ -696,4 +697,8 @@ export default function AdminBookingDetailPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminBookingDetailPage.getLayout = (page: ReactElement) => page;
+
+export default AdminBookingDetailPage;

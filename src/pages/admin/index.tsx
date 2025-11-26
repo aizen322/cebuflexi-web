@@ -1,8 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, ReactElement } from "react";
 import { useRouter } from "next/router";
 import { Loader2 } from "lucide-react";
+import { NextPageWithLayout } from "@/pages/_app";
 
-export default function AdminIndexPage() {
+const AdminIndexPage: NextPageWithLayout = () => {
   const router = useRouter();
 
   useEffect(() => {
@@ -18,6 +19,10 @@ export default function AdminIndexPage() {
       </div>
     </div>
   );
-}
+};
+
+AdminIndexPage.getLayout = (page: ReactElement) => page;
+
+export default AdminIndexPage;
 
 

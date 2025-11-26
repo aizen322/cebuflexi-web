@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -10,7 +11,7 @@ import { format } from "date-fns";
 import { COLLECTIONS } from "@/lib/firestore-collections";
 import { BlogPost } from "@/types";
 
-export default function AdminBlogPage() {
+const AdminBlogPage: NextPageWithLayout = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -90,6 +91,10 @@ export default function AdminBlogPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminBlogPage.getLayout = (page: ReactElement) => page;
+
+export default AdminBlogPage;
 
 

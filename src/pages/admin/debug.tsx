@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import { useAuth } from "@/contexts/AuthContext";
 import { auth } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -8,7 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function AdminDebugPage() {
+const AdminDebugPage: NextPageWithLayout = () => {
   const { user } = useAuth();
   const [tokenClaims, setTokenClaims] = useState<Record<string, unknown> | null>(null);
   const [firestoreRole, setFirestoreRole] = useState<string | null>(null);
@@ -227,5 +228,9 @@ export default function AdminDebugPage() {
       </div>
     </div>
   );
-}
+};
+
+AdminDebugPage.getLayout = (page: ReactElement) => page;
+
+export default AdminDebugPage;
 

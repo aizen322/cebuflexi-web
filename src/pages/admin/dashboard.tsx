@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -54,7 +55,7 @@ interface AdminDashboardPageProps {
   serverUser: ServerUser;
 }
 
-export default function AdminDashboardPage({ serverUser }: AdminDashboardPageProps) {
+const AdminDashboardPage: NextPageWithLayout<AdminDashboardPageProps> = ({ serverUser }) => {
   const router = useRouter();
   void serverUser;
   const [stats, setStats] = useState<DashboardStats>({
@@ -380,6 +381,10 @@ export default function AdminDashboardPage({ serverUser }: AdminDashboardPagePro
     </AdminProtectedRoute>
   );
 }
+
+AdminDashboardPage.getLayout = (page: ReactElement) => page;
+
+export default AdminDashboardPage;
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   try {

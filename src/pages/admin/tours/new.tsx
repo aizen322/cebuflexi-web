@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Image from "next/image";
@@ -26,7 +27,7 @@ import { createTour } from "@/services/admin/tourService";
 import { uploadTourImages, validateImageFile } from "@/lib/admin/imageUpload";
 import type { Tour } from "@/types";
 
-export default function AdminNewTourPage() {
+const AdminNewTourPage: NextPageWithLayout = () => {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -802,6 +803,10 @@ export default function AdminNewTourPage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminNewTourPage.getLayout = (page: ReactElement) => page;
+
+export default AdminNewTourPage;
 
 

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, ReactElement } from "react";
+import { NextPageWithLayout } from "@/pages/_app";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import Image from "next/image";
@@ -25,7 +26,7 @@ import { createVehicle } from "@/services/admin/vehicleService";
 import { uploadVehicleImage, validateImageFile } from "@/lib/admin/imageUpload";
 import type { Vehicle } from "@/types";
 
-export default function AdminNewVehiclePage() {
+const AdminNewVehiclePage: NextPageWithLayout = () => {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -548,5 +549,9 @@ export default function AdminNewVehiclePage() {
       </AdminLayout>
     </AdminProtectedRoute>
   );
-}
+};
+
+AdminNewVehiclePage.getLayout = (page: ReactElement) => page;
+
+export default AdminNewVehiclePage;
 
